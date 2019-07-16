@@ -1,0 +1,29 @@
+resources:
+  repositories:
+  - repository: abs-tudelft
+    type: github
+    endpoint: github
+    name: abs-tudelft/azure-pipelines-templates
+
+variables:
+  arrowVersion: 0.14.0
+  awsfpgaVersion: 1.4.8
+
+jobs:
+
+- job: runtime
+  pool:
+    vmImage: ubuntu-latest
+  steps:
+  - checkout: self
+    submodules: true
+  - template: steps/install-aws-fpga.yml@abs-tudelft
+    parameters:
+      version: $(awsfpgaVersion)
+  - template: steps/install-arrow.yml@abs-tudelft
+    parameters:
+      version: $(arrowVersion)
+  - template: steps/install-cmake.yml@abs-tudelft
+  - template: steps/cmake.yml@abs-tudelft
+    parameters:
+      source: runtime
