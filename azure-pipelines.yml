@@ -6,7 +6,7 @@ resources:
     name: abs-tudelft/azure-pipelines-templates
 
 variables:
-  arrowVersion: 0.14.0
+  arrowVersion: 0.15.1
   awsfpgaVersion: 1.4.8
 
 jobs:
