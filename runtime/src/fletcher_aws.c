@@ -34,7 +34,7 @@ static fstatus_t check_ddr(const uint8_t *source, da_t offset, size_t size) {
   int rc = fpga_dma_burst_read(aws_state.xdma_rd_fd[0], check_buffer, size,
             offset);
   if (rc < 0) {
-    fprintf(stderr, "[FLETCHER_AWS] unable to open read dma queue.\n");
+    fprintf(stderr, "[FLETCHER_AWS] Error during fpga_dma_burst_read.\n");
   }
   int ret = memcmp(source, check_buffer, size);
   free(check_buffer);
