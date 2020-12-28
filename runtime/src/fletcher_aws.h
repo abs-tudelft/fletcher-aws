@@ -15,8 +15,10 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#include <fpga_pci.h>
-#include <fpga_mgmt.h>
+#include "fpga_pci.h"
+#include "fpga_mgmt.h"
+#include "fpga_dma.h"
+#include "utils/lcd.h"
 
 #include "fletcher/fletcher.h"
 
@@ -30,11 +32,11 @@
 
 #define FLETCHER_PLATFORM_NAME "aws"
 
-// Do not change num_queues to other than 1. This is broken in AWS FPGA at the moment
-// TODO(johanpel): figure out while multiple queues are broken in XDMA driver
-#define FLETCHER_AWS_NUM_QUEUES       4
+// joosthooz: By using the burst read/write function, allocating multiple DMA queues 
+// seems unnecessary at this point. Maybe if we want to issue buffer read/write
+// commands asynchronously (I don't even know if the AWS libraries support that)
+#define FLETCHER_AWS_NUM_QUEUES       1
 #define FLETCHER_AWS_DEVICE_ALIGNMENT 4096
-#define FLETCHER_AWS_QUEUE_THRESHOLD (1024*1024*1) // 1 MiB
 
 typedef struct {
   int slot_id;
@@ -49,8 +51,6 @@ typedef struct {
   int xdma_rd_fd[FLETCHER_AWS_NUM_QUEUES];
   pci_bar_handle_t pci_bar_handle;
   int error;
-  char wr_device_filename[256];
-  char rd_device_filename[256];
   da_t buffer_ptr;
 } PlatformState;
 

@@ -19,23 +19,23 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <fpga_pci.h>
-#include <fpga_mgmt.h>
-
 #include "fletcher/fletcher.h"
-
 #include "fletcher_aws.h"
 
+static const uint16_t AMZ_PCI_VENDOR_ID = 0x1D0F; /* Amazon PCI Vendor ID */
+static const uint16_t PCI_DEVICE_ID = 0xF001;
+
 // Dirty globals
-AwsConfig aws_default_config = {0, 0, 1};
-PlatformState aws_state = {{0, 0, 0}, 4096, {0}, {0},  0, 0, {0}, {0}, 0x0};
+//joosthooz TODO: it is recommended to not use the sda interface. Change to ocl (BAR0)
+AwsConfig aws_default_config = {0, 0, 4}; //the sda AXI-Lite interface maps to BAR4 (when changing this, also change the line below).
+PlatformState aws_state = {{0, 0, 4}, 4096, {0}, {0},  0, 0, 0x0};
 
 static fstatus_t check_ddr(const uint8_t *source, da_t offset, size_t size) {
   uint8_t *check_buffer = (uint8_t *) malloc(size);
-  int rc = pread(aws_state.xdma_rd_fd[0], check_buffer, size, offset);
+  int rc = fpga_dma_burst_read(aws_state.xdma_rd_fd[0], check_buffer, size,
+            offset);
   if (rc < 0) {
-    int errsv = errno;
-    fprintf(stderr, "[FLETCHER_AWS] pread() error: %s\n", strerror(errsv));
+    fprintf(stderr, "[FLETCHER_AWS] unable to open read dma queue.\n");
   }
   int ret = memcmp(source, check_buffer, size);
   free(check_buffer);
@@ -43,10 +43,6 @@ static fstatus_t check_ddr(const uint8_t *source, da_t offset, size_t size) {
 }
 
 static fstatus_t check_slot_config(int slot_id) {
-  // Amazon PCI Vendor ID
-  static uint16_t pci_vendor_id = 0x1D0F;
-
-  static uint16_t pci_device_id = 0xF001;
 
   // Parts of this function from AWS sources
   int rc = 0;
@@ -69,7 +65,8 @@ static fstatus_t check_slot_config(int slot_id) {
   }
 
   // Confirm that AFI is loaded
-  if (info.spec.map[FPGA_APP_PF].vendor_id != pci_vendor_id || info.spec.map[FPGA_APP_PF].device_id != pci_device_id) {
+  if (info.spec.map[FPGA_APP_PF].vendor_id != AMZ_PCI_VENDOR_ID || 
+      info.spec.map[FPGA_APP_PF].device_id != PCI_DEVICE_ID) {
     rc = 1;
     fprintf(stderr,
             "[FLETCHER_AWS] Slot appears loaded, but pci vendor or device ID doesn't match the expected value. \n"
@@ -81,6 +78,16 @@ static fstatus_t check_slot_config(int slot_id) {
             "\tThe PCI vendor id and device of the loaded image are not the expected values.", slot_id);
     return FLETCHER_STATUS_ERROR;
   }
+  
+    char dbdf[16];
+    snprintf(dbdf,
+                  sizeof(dbdf),
+                  PCI_DEV_FMT,
+                  info.spec.map[FPGA_APP_PF].domain,
+                  info.spec.map[FPGA_APP_PF].bus,
+                  info.spec.map[FPGA_APP_PF].dev,
+                  info.spec.map[FPGA_APP_PF].func);
+    debug_print("[FLETCHER_AWS] Operating on slot %d with id: %s", slot_id, dbdf);
 
   return FLETCHER_STATUS_OK;
 }
@@ -118,18 +125,24 @@ fstatus_t platformInit(void *arg) {
     return FLETCHER_STATUS_ERROR;
   }
 
-  debug_print("[FLETCHER_AWS] Slot config: %lu\n", check_slot_config(config->slot_id));
-
+  rc = check_slot_config(config->slot_id);
+  if (rc != FLETCHER_STATUS_OK) {
+    fprintf(stderr, "[FLETCHER_AWS] Slot config is not correct.\n");
+    aws_state.error = 1;
+    return FLETCHER_STATUS_ERROR;
+  }
+    
   // Open files for all queues
   for (int q = 0; q < FLETCHER_AWS_NUM_QUEUES; q++) {
     // Get the XDMA device filename
-    snprintf(aws_state.wr_device_filename, 256, "/dev/xdma%i_h2c_%i", aws_state.config.slot_id, q);
-    snprintf(aws_state.rd_device_filename, 256, "/dev/xdma%i_c2h_%i", aws_state.config.slot_id, q);
 
-    // Attempt to open the XDMA file
-    debug_print("[FLETCHER_AWS] Attempting to open device files for queue %d; %s and %s.\n", q, aws_state.wr_device_filename, aws_state.rd_device_filename);
-    aws_state.xdma_wr_fd[q] = open(aws_state.wr_device_filename, O_WRONLY);
-    aws_state.xdma_rd_fd[q] = open(aws_state.rd_device_filename, O_RDONLY);
+    // Attempt to open a XDMA DMA Queue
+    debug_print("[FLETCHER_AWS] Attempting to open DMA queue %d.\n", q);
+    
+    aws_state.xdma_wr_fd[q] = fpga_dma_open_queue(FPGA_DMA_XDMA, aws_state.config.slot_id,
+        /*channel*/ q, /*is_read*/ false);
+    aws_state.xdma_rd_fd[q] = fpga_dma_open_queue(FPGA_DMA_XDMA, aws_state.config.slot_id,
+        /*channel*/ q, /*is_read*/ true);
 
     if ((aws_state.xdma_rd_fd[q] < 0) || (aws_state.xdma_wr_fd[q] < 0)) {
       fprintf(stderr, "[FLETCHER_AWS] Did not get a valid file descriptor.\n"
@@ -148,7 +161,7 @@ fstatus_t platformInit(void *arg) {
   rc = fpga_pci_attach(aws_state.config.slot_id,
                        aws_state.config.pf_id,
                        aws_state.config.bar_id,
-                       0,
+                       0, //fpga_attach_flags
                        &aws_state.pci_bar_handle);
 
   debug_print("[FLETCHER_AWS] Bar handle init: %d\n", aws_state.pci_bar_handle);
@@ -195,50 +208,17 @@ fstatus_t platformCopyHostToDevice(const uint8_t *host_source, da_t device_desti
               (uint64_t) device_destination,
               size);
 
-  size_t written[FLETCHER_AWS_NUM_QUEUES] = {0};
-
-  int queues = FLETCHER_AWS_NUM_QUEUES;
-
-  // Only use more queues if the data to copy is larger than the queue threshold
-  if (size < FLETCHER_AWS_QUEUE_THRESHOLD) {
-    queues = 1;
-  }
-  size_t qbytes = (size_t)(size / queues);
-
-  for (int q = 0; q < queues; q++) {
-    ssize_t rc = 0;
-    // Determine number of bytes for the whole transfer
-    size_t qtotal = qbytes;
-    const uint8_t *qsource = host_source + q * qbytes;
-    da_t qdest = device_destination + qbytes * q;
-
-    // For the last queue check how many extra bytes we must copy
-    if (q == queues - 1) {
-      qtotal = qbytes + (size % queues);
-    }
-
-    while (written[q] < qtotal) {
-      // Write some bytes
-      rc = pwrite(aws_state.xdma_wr_fd[q],
-                  (void *) ((uint64_t) qsource + written[q]),
-                  qtotal - written[q],
-                  qdest + written[q]);
-
-      // If rc is negative there is something else going wrong. Abort the mission
-      if (rc < 0) {
-        int errsv = errno;
-        fprintf(stderr, "[FLETCHER_AWS] Copy host to device failed. Queue: %d. Error: %s\n", q, strerror(errsv));
-        aws_state.error = 1;
-        return FLETCHER_STATUS_ERROR;
-      }
-      written[q] += rc;
-    }
-  }
-  for (int q = 0; q < queues; q++) {
-    total += written[q];
-
-    // Synchronize the files
-    fsync(aws_state.xdma_wr_fd[q]);
+/*
+ * use only 1 queue for now, the burst library functions take care of
+ * issueing multiple DMA transfers.
+ */  
+  int q = 0; 
+  ssize_t rc = 0;
+  rc = fpga_dma_burst_write(aws_state.xdma_wr_fd[q], (uint8_t*)host_source, size, device_destination);
+  if (rc < 0) {
+    fprintf(stderr, "[FLETCHER_AWS] Copy host to device failed. Queue: %d.\n", q);
+    aws_state.error = 1;
+    return FLETCHER_STATUS_ERROR;
   }
 
 #ifdef DEBUG
@@ -260,50 +240,17 @@ fstatus_t platformCopyDeviceToHost(da_t device_source, uint8_t *host_destination
               (uint64_t) host_destination,
               size);
 
-  size_t read[FLETCHER_AWS_NUM_QUEUES] = {0};
-
-  int queues = FLETCHER_AWS_NUM_QUEUES;
-
-  // Only use more queues if the data to copy is larger than the queue threshold
-  if (size < FLETCHER_AWS_QUEUE_THRESHOLD) {
-    queues = 1;
-  }
-  size_t qbytes = (size_t)(size / queues);
-
-  for (int q = 0; q < queues; q++) {
-    ssize_t rc = 0;
-    // Determine number of bytes for the whole transfer
-    size_t qtotal = qbytes;
-    const uint8_t *qdest = host_destination + q * qbytes;
-    da_t qsource = device_source + qbytes * q;
-
-    // For the last queue check how many extra bytes we must copy
-    if (q == queues - 1) {
-      qtotal = qbytes + (size % queues);
-    }
-
-    while (read[q] < qtotal) {
-      // Write some bytes
-      rc = pread(aws_state.xdma_rd_fd[q],
-                 (void *) ((uint64_t) qdest + read[q]),
-                 qtotal - read[q],
-                 qsource + read[q]);
-
-      // If rc is negative there is something else going wrong. Abort the mission
-      if (rc < 0) {
-        int errsv = errno;
-        fprintf(stderr, "[FLETCHER_AWS] Copy device to host failed. Queue: %d. Error: %s\n", q, strerror(errsv));
-        aws_state.error = 1;
-        return FLETCHER_STATUS_ERROR;
-      }
-      read[q] += rc;
-    }
-  }
-  for (int q = 0; q < queues; q++) {
-    total += read[q];
-
-    // Synchronize the files
-    fsync(aws_state.xdma_rd_fd[q]);
+/*
+ * use only 1 queue for now, the burst library functions take care of
+ * issueing multiple DMA transfers.
+ */  
+  int q = 0; 
+  ssize_t rc = 0;
+  rc = fpga_dma_burst_read(aws_state.xdma_rd_fd[0], host_destination, size, device_source);
+  if (rc < 0) {
+    fprintf(stderr, "[FLETCHER_AWS] Copy device to host failed. Queue: %d.\n", q);
+    aws_state.error = 1;
+    return FLETCHER_STATUS_ERROR;
   }
 
   return FLETCHER_STATUS_OK;
@@ -318,7 +265,7 @@ fstatus_t platformTerminate(void *arg) {
     fprintf(stderr, "[FLETCHER_AWS] Could not detach FPGA PCI\n");
     return FLETCHER_STATUS_ERROR;
   }
-
+  
   for (int q = 0; q < FLETCHER_AWS_NUM_QUEUES; q++) {
     close(aws_state.xdma_rd_fd[q]);
     close(aws_state.xdma_wr_fd[q]);
