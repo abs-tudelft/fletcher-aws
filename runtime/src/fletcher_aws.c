@@ -26,9 +26,8 @@ static const uint16_t AMZ_PCI_VENDOR_ID = 0x1D0F; /* Amazon PCI Vendor ID */
 static const uint16_t PCI_DEVICE_ID = 0xF001;
 
 // Dirty globals
-//joosthooz TODO: it is recommended to not use the sda interface. Change to ocl (BAR0)
-AwsConfig aws_default_config = {0, 0, 4}; //the sda AXI-Lite interface maps to BAR4 (when changing this, also change the line below).
-PlatformState aws_state = {{0, 0, 4}, 4096, {0}, {0},  0, 0, 0x0};
+AwsConfig aws_default_config = {0, 0, 1}; //the ocl AXI-Lite interface maps to BAR1
+PlatformState aws_state = {{0, 0, 1}, 4096, {0}, {0},  0, 0, 0x0};
 
 static fstatus_t check_ddr(const uint8_t *source, da_t offset, size_t size) {
   uint8_t *check_buffer = (uint8_t *) malloc(size);
