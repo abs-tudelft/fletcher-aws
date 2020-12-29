@@ -25,7 +25,7 @@
 
 #define debug_print(...) do { if (ENABLE_DEBUG_PRINT) fprintf(stderr, __VA_ARGS__); } while (0)
 
-#define FLETCHER_PLATFORM_NAME "aws-sim"
+#define FLETCHER_PLATFORM_NAME "aws_sim"
 
 #define FLETCHER_AWS_DEVICE_ALIGNMENT 4096
 
