@@ -27,7 +27,7 @@
 
 // Dirty globals
 PlatformState aws_state = {FLETCHER_AWS_DEVICE_ALIGNMENT, 0, 0x0};
-
+InitOptions options = {0};
 
 static fstatus_t check_ddr(const uint8_t *source, da_t offset, size_t size) {
   uint8_t *check_buffer = (uint8_t *) malloc(size);
@@ -50,7 +50,11 @@ fstatus_t platformGetName(char *name, size_t size) {
 
 fstatus_t platformInit(void *arg) {
 
-  debug_print("[FLETCHER_AWS_SIM] Initializing platform.       Arguments are ignored.\n");
+  if (arg != NULL) {
+    options = *(InitOptions *) arg;
+  }
+
+  debug_print("[FLETCHER_AWS_SIM] Initializing platform.       Arguments @ [host] %016lX.\n", (unsigned long) arg);
 
     /* The statements within SCOPE ifdef below are needed for HW/SW
      * co-simulation with VCS */
@@ -59,16 +63,20 @@ fstatus_t platformInit(void *arg) {
     scope = svGetScopeFromName("tb");
     svSetScope(scope);
 #endif
-    printf("Starting DDR init...\n");
-    init_ddr();
-    deselect_atg_hw();
-    printf("Done DDR init...\n");
+    if (options.no_DDR_init) {
+        printf("Skipping DDR init.\n");
+    } else {
+        printf("Starting DDR init...\n");
+        init_ddr();
+        deselect_atg_hw();
+        printf("Done DDR init...\n");
+    }
 
   return FLETCHER_STATUS_OK;
 }
 
 fstatus_t platformWriteMMIO(uint64_t offset, uint32_t value) {
-  cl_poke(sizeof(uint32_t) * offset, value);
+  cl_poke_bar1(sizeof(uint32_t) * offset, value);
   debug_print("[FLETCHER_AWS_SIM] MMIO Write %d : %08X\n", (uint32_t) offset, (uint32_t) value);
   return FLETCHER_STATUS_OK;
 }
@@ -76,7 +84,7 @@ fstatus_t platformWriteMMIO(uint64_t offset, uint32_t value) {
 fstatus_t platformReadMMIO(uint64_t offset, uint32_t *value) {
   *value = 0xDEADBEEF;
   int rc = 0;
-  cl_peek(sizeof(uint32_t) * offset, value);
+  cl_peek_bar1(sizeof(uint32_t) * offset, value);
   debug_print("[FLETCHER_AWS_SIM] MMIO Read %d : %08X\n", (uint32_t) offset, (uint32_t)(*value));
   return FLETCHER_STATUS_OK;
 }

@@ -26,7 +26,7 @@ static const uint16_t AMZ_PCI_VENDOR_ID = 0x1D0F; /* Amazon PCI Vendor ID */
 static const uint16_t PCI_DEVICE_ID = 0xF001;
 
 // Dirty globals
-AwsConfig aws_default_config = {0, 0, 1}; //the ocl AXI-Lite interface maps to BAR1
+AwsConfig aws_default_config = {0, 0, 1}; // Slot 0, BAR1
 PlatformState aws_state = {{0, 0, 1}, 4096, {0}, {0},  0, 0, 0x0};
 
 static fstatus_t check_ddr(const uint8_t *source, da_t offset, size_t size) {
@@ -130,7 +130,7 @@ fstatus_t platformInit(void *arg) {
     aws_state.error = 1;
     return FLETCHER_STATUS_ERROR;
   }
-    
+
   // Open files for all queues
   for (int q = 0; q < FLETCHER_AWS_NUM_QUEUES; q++) {
     // Get the XDMA device filename
