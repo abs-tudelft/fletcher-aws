@@ -4,4 +4,4 @@
 
 Fletcher AWS platform support.
 
-After cloning, run `git submodule init && git submodule update` to download the fletcher and aws-fpga subrepositories.
+To use, source `sourceme.sh` (this will also clone the subrepos and configure the aws-fpga environment)
