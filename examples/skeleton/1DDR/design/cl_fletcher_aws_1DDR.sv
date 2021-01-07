@@ -15,7 +15,6 @@
 
 
 `define FLETCHER_TOP AxiTop
-`define DDR_A_ABSENT True
 
 module cl_fletcher_aws_1DDR #(parameter NUM_DDR=1) 
 
