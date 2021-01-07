@@ -38,10 +38,12 @@
 --include ${HDK_SHELL_DESIGN_DIR}/ip/cl_axi_interconnect/ipshared/7e3a/hdl
 --include ${HDK_SHELL_DESIGN_DIR}/sh_ddr/sim
 
+#needs to be first, to define CL_NAME
+${CL_ROOT}/design/cl_dram_dma_defines.vh
+
 -f ${HDK_COMMON_DIR}/verif/tb/filelists/tb.${SIMULATOR}.f
 ${TEST_NAME}
 
-${CL_ROOT}/design/cl_dram_dma_defines.vh
 ${HDK_SHELL_DESIGN_DIR}/ip/axi_clock_converter_0/sim/axi_clock_converter_0.v
 ${HDK_SHELL_DESIGN_DIR}/ip/dest_register_slice/sim/dest_register_slice.v
 ${HDK_SHELL_DESIGN_DIR}/ip/src_register_slice/sim/src_register_slice.v
