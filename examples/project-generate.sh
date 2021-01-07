@@ -39,7 +39,7 @@ for version in 1DDR 4DDR; do
     cut -d ' ' -f4 sources.tmp.txt > sources.txt
     cp sources.txt ../../verif/scripts/top.vivado.vhdl.f #These are now absolute paths
     
-    sed -e 's<^<file copy -force $CL_DIR/design <' sources.txt > sources.encrypt.tmp.txt
+    sed -e 's<^<file copy -force <' sources.txt > sources.encrypt.tmp.txt
     sed -e 's<$< $TARGET_DIR<' sources.encrypt.tmp.txt > sources.encrypt.txt
     sed -e 's<#FLETCHER_AXITOP_VHDL_FILES<cat sources.encrypt.txt; echo "&"<e' ../../build/scripts/encrypt.tcl.template > ../../build/scripts/encrypt.tcl
     rm ../../build/scripts/encrypt.tcl.template
