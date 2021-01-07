@@ -16,6 +16,9 @@
 `ifndef CL_DRAM_DMA_DEFINES
 `define CL_DRAM_DMA_DEFINES
 
+//Put module name of the CL design here.  This is used to instantiate in top.sv
+`define CL_NAME cl_fletcher_aws_1DDR
+
 //Highly recommeneded.  For lib FIFO block, uses less async reset (take advantage of
 // FPGA flop init capability).  This will help with routing resources.
 `define FPGA_LESS_RST
