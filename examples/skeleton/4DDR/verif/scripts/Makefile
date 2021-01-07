@@ -39,7 +39,7 @@ export C_SRC_DIR  = $(CL_ROOT)/software/runtime
 #The common fletcher AWS platform code 
 #This Makefile cannot use the library due to link order; 
 #the fletcher_aws_sim lib needs functions from sh_dpi_tasks.c
-export FLETCHER_AWS_SIM_SRC_DIR  = $(FLETCHER_AWS_DIR)/runtim/runtime_sim/src
+export FLETCHER_AWS_SIM_SRC_DIR  = $(FLETCHER_AWS_DIR)/runtime/runtime_sim/src
 
 export TEST_NAME =  $(CL_ROOT)/verif/tests/$(TEST).sv
 
