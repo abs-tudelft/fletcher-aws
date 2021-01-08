@@ -3,4 +3,4 @@
 	url = https://github.com/abs-tudelft/fletcher
 [submodule "aws-fpga"]
 	path = aws-fpga
-	url = git@github.com:joosthooz/aws-fpga.git
+	url = https://github.com/joosthooz/aws-fpga.git
