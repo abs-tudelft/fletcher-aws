@@ -22,6 +22,9 @@ endif
 ifndef FLETCHER_AWS_DIR
 $(error Environment variable FLETCHER_AWS_DIR not set. please source fletcher-aws sourceme.sh)
 endif
+ifndef FLETCHER_AWS_SIM_BUILD_DIR
+$(error Environment variable FLETCHER_AWS_SIM_BUILD_DIR not set. Set this to where you built the simulation runtime.)
+endif
 
 export TEST ?= test_null
 export C_TEST ?= test_null
@@ -101,8 +104,8 @@ SV_TEST_LIST = test_hello_world
 #    However, the library needs functions from sh_dpi_tasks.c. So we're adding it as a source file as well, so the linker
 #    can find everything and we don't get any undefined symbol errors.
 C_FILES      = $(C_TEST_NAME) $(FLETCHER_AWS_SIM_SRC_DIR)/fletcher_aws_sim.c $(C_SDK_USR_UTILS_DIR)/sh_dpi_tasks.c \
-$(C_COMMON_DIR)/src/fpga_pci_sv.c --gcc_compile_options I$(FLETCHER_AWS_SIM_SRC_DIR) --gcc_link_options lfletcher_aws_sim \
---gcc_link_options lfletcher
+$(C_COMMON_DIR)/src/fpga_pci_sv.c --gcc_compile_options I$(FLETCHER_AWS_SIM_SRC_DIR) --gcc_link_options \
+L$(FLETCHER_AWS_SIM_BUILD_DIR) --gcc_link_options lfletcher_aws_sim --gcc_link_options lfletcher
 
 ifeq ($(XCHK), 1)
   all:	make_sim_dir compile_chk run
