@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 if [[ $# -lt 2 ]];
 then
   echo "Usage: project-generate.sh PROJECT-NAME VHDL_PATH [VHDEPS_INCLUDE_DIRS]..."
@@ -35,7 +37,7 @@ for version in 1DDR 4DDR; do
     echo "vhdl directory not found, please make sure you have referenced a Fletcher-generated directory that is named 'vhdl'."
     exit -1
   else
-    vhdeps -i . ${VHDEPS_INCLUDE_ARGS} dump AxiTop > sources.tmp.txt
+    python3 -m vhdeps -i . ${VHDEPS_INCLUDE_ARGS} dump AxiTop > sources.tmp.txt
     cut -d ' ' -f4 sources.tmp.txt > sources.txt
     cp sources.txt ../../verif/scripts/top.vivado.vhdl.f #These are now absolute paths
     
