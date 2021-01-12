@@ -104,7 +104,8 @@ SV_TEST_LIST = test_hello_world
 #    However, the library needs functions from sh_dpi_tasks.c. So we're adding it as a source file as well, so the linker
 #    can find everything and we don't get any undefined symbol errors.
 C_FILES      = $(C_TEST_NAME) $(FLETCHER_AWS_SIM_SRC_DIR)/fletcher_aws_sim.c $(C_SDK_USR_UTILS_DIR)/sh_dpi_tasks.c \
-$(C_COMMON_DIR)/src/fpga_pci_sv.c --gcc_compile_options I$(FLETCHER_AWS_SIM_SRC_DIR) --gcc_link_options \
+$(C_COMMON_DIR)/src/fpga_pci_sv.c --gcc_compile_options I$(FLETCHER_AWS_SIM_SRC_DIR) \
+--gcc_compile_options D_GLIBCXX_USE_CXX11_ABI=0 --gcc_link_options \
 L$(FLETCHER_AWS_SIM_BUILD_DIR) --gcc_link_options lfletcher_aws_sim --gcc_link_options lfletcher
 
 ifeq ($(XCHK), 1)

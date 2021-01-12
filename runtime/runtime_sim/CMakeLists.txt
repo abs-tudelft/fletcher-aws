@@ -12,6 +12,8 @@ else()
   message(FATAL_ERROR "Dependency fpga_mgmt not found")
 endif()
 
+add_compile_definitions(_GLIBCXX_USE_CXX11_ABI=0)
+
 include(FetchContent)
 
 FetchContent_Declare(cmake-modules
