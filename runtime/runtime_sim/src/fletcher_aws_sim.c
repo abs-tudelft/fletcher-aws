@@ -30,8 +30,8 @@ PlatformState aws_state = {FLETCHER_AWS_DEVICE_ALIGNMENT, 0, 0x0};
 InitOptions options = {0};
 
 static fstatus_t check_ddr(const uint8_t *source, da_t offset, size_t size) {
-  uint8_t *check_buffer = (uint8_t *) malloc(size);
-  sv_fpga_start_cl_to_buffer(0, 0, size, (uint64_t) check_buffer, offset);
+  uint8_t *check_buffer = (uint8_t*)malloc(size);
+  sv_fpga_start_cl_to_buffer(0, 0, size, (uint64_t)check_buffer, offset);
   int ret = memcmp(source, check_buffer, size);
   free(check_buffer);
   return (ret == 0) ? FLETCHER_STATUS_OK : FLETCHER_STATUS_ERROR;
@@ -51,26 +51,26 @@ fstatus_t platformGetName(char *name, size_t size) {
 fstatus_t platformInit(void *arg) {
 
   if (arg != NULL) {
-    options = *(InitOptions *) arg;
+    options = *(InitOptions*)arg;
   }
 
   debug_print("[FLETCHER_AWS_SIM] Initializing platform.       Arguments @ [host] %016lX.\n", (unsigned long) arg);
 
-    /* The statements within SCOPE ifdef below are needed for HW/SW
-     * co-simulation with VCS */
+  /* The statements within SCOPE ifdef below are needed for HW/SW
+   * co-simulation with VCS */
 #if defined(SCOPE)
-    svScope scope;
-    scope = svGetScopeFromName("tb");
-    svSetScope(scope);
+  svScope scope;
+  scope = svGetScopeFromName("tb");
+  svSetScope(scope);
 #endif
-    if (options.no_DDR_init) {
-        printf("Skipping DDR init.\n");
-    } else {
-        printf("Starting DDR init...\n");
-        init_ddr();
-        deselect_atg_hw();
-        printf("Done DDR init...\n");
-    }
+  if (options.no_DDR_init) {
+    printf("Skipping DDR init.\n");
+  } else {
+    printf("Starting DDR init...\n");
+    init_ddr();
+    deselect_atg_hw();
+    printf("Done DDR init...\n");
+  }
 
   return FLETCHER_STATUS_OK;
 }
@@ -92,11 +92,13 @@ fstatus_t platformReadMMIO(uint64_t offset, uint32_t *value) {
 fstatus_t platformCopyHostToDevice(const uint8_t *host_source, da_t device_destination, int64_t size) {
   size_t total = 0;
 
-  debug_print("[FLETCHER_AWS_SIM] Copying host to device %016lX -> %016lX (%li bytes).\n",
-              (uint64_t) host_source,
-              (uint64_t) device_destination,
-              size);
-  
+  debug_print(
+    "[FLETCHER_AWS_SIM] Copying host to device %016lX -> %016lX (%li bytes).\n",
+    (uint64_t) host_source,
+    (uint64_t) device_destination,
+    size
+  );
+
   sv_fpga_start_buffer_to_cl(0, 0, size, (uint64_t) host_source, device_destination);
 
 #ifdef DEBUG
@@ -113,11 +115,13 @@ fstatus_t platformCopyHostToDevice(const uint8_t *host_source, da_t device_desti
 fstatus_t platformCopyDeviceToHost(da_t device_source, uint8_t *host_destination, int64_t size) {
   size_t total = 0;
 
-  debug_print("[FLETCHER_AWS_SIM] Copying device to host %016lX -> %016lX (%li bytes).\n",
-              (uint64_t) device_source,
-              (uint64_t) host_destination,
-              size);
-  
+  debug_print(
+    "[FLETCHER_AWS_SIM] Copying device to host %016lX -> %016lX (%li bytes).\n",
+    (uint64_t) device_source,
+    (uint64_t) host_destination,
+    size
+  );
+
   sv_fpga_start_cl_to_buffer(0, 0, size, (uint64_t) host_destination, device_source);
   return FLETCHER_STATUS_OK;
 }
@@ -130,15 +134,20 @@ fstatus_t platformTerminate(void *arg) {
 
 fstatus_t platformDeviceMalloc(da_t *device_address, int64_t size) {
   *device_address = aws_state.buffer_ptr;
-  debug_print("[FLETCHER_AWS_SIM] Allocating device memory.    [device] 0x%016lX (%10lu bytes).\n",
-              (uint64_t) aws_state.buffer_ptr,
-              size);
+  debug_print(
+    "[FLETCHER_AWS_SIM] Allocating device memory.    [device] 0x%016lX (%10lu bytes).\n",
+    (uint64_t) aws_state.buffer_ptr,
+    size
+  );
   aws_state.buffer_ptr += size + FLETCHER_AWS_DEVICE_ALIGNMENT - (size % FLETCHER_AWS_DEVICE_ALIGNMENT);
   return FLETCHER_STATUS_OK;
 }
 
 fstatus_t platformDeviceFree(da_t device_address) {
-  debug_print("[FLETCHER_AWS_SIM] Freeing device memory.       [device] 0x%016lX : NOT IMPLEMENTED.\n", device_address);
+  debug_print(
+    "[FLETCHER_AWS_SIM] Freeing device memory.       [device] 0x%016lX : NOT IMPLEMENTED.\n",
+    device_address
+  );
   return FLETCHER_STATUS_OK;
 }
 
@@ -150,10 +159,12 @@ fstatus_t platformPrepareHostBuffer(const uint8_t *host_source, da_t *device_des
 
 fstatus_t platformCacheHostBuffer(const uint8_t *host_source, da_t *device_destination, int64_t size) {
   *device_destination = aws_state.buffer_ptr;
-  debug_print("[FLETCHER_AWS_SIM] Caching buffer on device.    [host] 0x%016lX --> 0x%016lX (%10lu bytes).\n",
-              (unsigned long) host_source,
-              (unsigned long) *device_destination,
-              size);
+  debug_print(
+    "[FLETCHER_AWS_SIM] Caching buffer on device.    [host] 0x%016lX --> 0x%016lX (%10lu bytes).\n",
+    (unsigned long) host_source,
+    (unsigned long) *device_destination,
+    size
+  );
   fstatus_t ret = platformCopyHostToDevice(host_source, aws_state.buffer_ptr, size);
   *device_destination = aws_state.buffer_ptr;
   aws_state.buffer_ptr += size + (FLETCHER_AWS_DEVICE_ALIGNMENT - (size % FLETCHER_AWS_DEVICE_ALIGNMENT));
@@ -165,33 +176,31 @@ fstatus_t platformCacheHostBuffer(const uint8_t *host_source, da_t *device_desti
 static uint8_t *send_rdbuf_to_c_read_buffer = NULL;
 static size_t send_rdbuf_to_c_buffer_size = 0;
 
-void setup_send_rdbuf_to_c(uint8_t *read_buffer, size_t buffer_size)
-{
-    send_rdbuf_to_c_read_buffer = read_buffer;
-    send_rdbuf_to_c_buffer_size = buffer_size;
+void setup_send_rdbuf_to_c(uint8_t *read_buffer, size_t buffer_size) {
+  send_rdbuf_to_c_read_buffer = read_buffer;
+  send_rdbuf_to_c_buffer_size = buffer_size;
 }
 
-int send_rdbuf_to_c(char* rd_buf)
-{
+int send_rdbuf_to_c(char* rd_buf) {
 #ifndef VIVADO_SIM
-    /* Vivado does not support svGetScopeFromName */
-    svScope scope;
-    scope = svGetScopeFromName("tb");
-    svSetScope(scope);
+  /* Vivado does not support svGetScopeFromName */
+  svScope scope;
+  scope = svGetScopeFromName("tb");
+  svSetScope(scope);
 #endif
-    int i;
+  int i;
 
-    /* For Questa simulator the first 8 bytes are not transmitted correctly, so
-     * the buffer is transferred with 8 extra bytes and those bytes are removed
-     * here. Made this default for all the simulators. */
-    for (i = 0; i < send_rdbuf_to_c_buffer_size; ++i) {
-        send_rdbuf_to_c_read_buffer[i] = rd_buf[i+8];
-    }
+  /* For Questa simulator the first 8 bytes are not transmitted correctly, so
+   * the buffer is transferred with 8 extra bytes and those bytes are removed
+   * here. Made this default for all the simulators. */
+  for (i = 0; i < send_rdbuf_to_c_buffer_size; ++i) {
+    send_rdbuf_to_c_read_buffer[i] = rd_buf[i+8];
+  }
 
-    /* end of line character is not transferered correctly. So assign that
-     * here. */
-    /*send_rdbuf_to_c_read_buffer[send_rdbuf_to_c_buffer_size - 1] = '\0';*/
+  /* end of line character is not transferered correctly. So assign that
+   * here. */
+  /*send_rdbuf_to_c_read_buffer[send_rdbuf_to_c_buffer_size - 1] = '\0';*/
 
-    return 0;
+  return 0;
 }
 #endif

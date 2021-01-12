@@ -39,14 +39,29 @@ export C_SRC_DIR  = $(CL_ROOT)/software/runtime
 #The common fletcher AWS platform code 
 #This Makefile cannot use the library due to link order; 
 #the fletcher_aws_sim lib needs functions from sh_dpi_tasks.c
-export FLETCHER_AWS_SIM_SRC_DIR  = $(FLETCHER_AWS_DIR)/runtime/runtime_sim/src
+export FLETCHER_AWS_SIM_RUNTIME_DIR = $(FLETCHER_AWS_DIR)/runtime/runtime_sim
 
 export TEST_NAME =  $(CL_ROOT)/verif/tests/$(TEST).sv
 
 ifeq ($(C_TEST),test_null)
   export C_TEST_NAME = $(HDK_COMMON_DIR)/software/src/$(C_TEST).c
+  C_FILES = $(C_TEST_NAME)
+  C_FILES += $(C_SDK_USR_UTILS_DIR)/sh_dpi_tasks.c
+  C_FILES += $(C_COMMON_DIR)/src/fpga_pci_sv.c
 else
-  export C_TEST_NAME = $(C_SRC_DIR)/$(C_TEST).cpp
+  C_TEST_NAME = $(C_SRC_DIR)/$(C_TEST).cpp
+  C_TEST_SO = $(C_SRC_DIR)/libtest.so
+  BUILD_WITH_GCC = 1
+  ifeq ($(LD_LIBRARY_PATH),)
+    export LD_LIBRARY_PATH=$(C_SRC_DIR)
+  else
+    export LD_LIBRARY_PATH:=$(C_SRC_DIR):$(LD_LIBRARY_PATH)
+  endif
+  C_FILES = $(C_SDK_USR_UTILS_DIR)/sh_dpi_tasks.c
+  C_FILES += $(C_COMMON_DIR)/src/fpga_pci_sv.c
+  C_FILES += $(FLETCHER_AWS_SIM_RUNTIME_DIR)/src/fletcher_aws_sim.c
+  C_FILES += --gcc_link_options I$(FLETCHER_AWS_SIM_RUNTIME_DIR)/include
+  C_FILES += --gcc_link_options L$(C_SRC_DIR) --gcc_link_options ltest
 endif
 
 export SIM_ROOT = $(CL_ROOT)/verif/sim/$(SIMULATOR)
@@ -95,28 +110,16 @@ export SH_SH_DIR   = $(HDK_SHELL_DESIGN_DIR)/sh_ddr/sim
 
 SV_TEST_LIST = test_hello_world
 
-# This next line has multiple layers of ugliness;
-#  1) There is no clean way to pass arguments to the build process, we're
-#     misusing --gcc_link_options to do that here.
-#  2) fletcher_aws_sim is a library, that is loaded dynamically during runtime.
-#     However, the library needs functions from sh_dpi_tasks.c. So we're adding
-#     it as a source file as well, so the linker can find everything and we
-#     don't get any undefined symbol errors.
-#  3) We need -D_GLIBCXX_USE_CXX11_ABI=0 to get things to work on CentOS, where
-#     stuff is still built using GCC 4.8.
-C_FILES = $(C_TEST_NAME)                                      \
-	$(FLETCHER_AWS_SIM_SRC_DIR)/fletcher_aws_sim.c        \
-	$(C_SDK_USR_UTILS_DIR)/sh_dpi_tasks.c                 \
-	$(C_COMMON_DIR)/src/fpga_pci_sv.c                     \
-	--gcc_compile_options I$(FLETCHER_AWS_SIM_SRC_DIR)    \
-	--gcc_compile_options D_GLIBCXX_USE_CXX11_ABI=0       \
-	--gcc_link_options lfletcher_aws_sim                  \
-	--gcc_link_options lfletcher
-
 ifeq ($(XCHK), 1)
-  all:	make_sim_dir compile_chk run
+  all:	build_test make_sim_dir compile_chk run
 else
-  all:	make_sim_dir compile run
+  all:	build_test make_sim_dir compile run
+endif
+
+.PHONY: build_test
+build_test:
+ifdef BUILD_WITH_GCC
+	g++ -shared -fPIC -std=c++11 -o $(C_TEST_SO) -DSV_TEST=1 $(C_TEST_NAME) -lfletcher_aws_sim -lfletcher
 endif
 
 include $(HDK_COMMON_DIR)/verif/tb/scripts/Makefile.common.inc

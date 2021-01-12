@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#ifndef FLETCHER_AWS_H
+#define FLETCHER_AWS_H
+
 #include <stdint.h>
 #include <unistd.h>
 
@@ -37,6 +40,10 @@
 // commands asynchronously (I don't even know if the AWS libraries support that)
 #define FLETCHER_AWS_NUM_QUEUES       1
 #define FLETCHER_AWS_DEVICE_ALIGNMENT 4096
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct {
   int slot_id;
@@ -124,3 +131,9 @@ fstatus_t platformCacheHostBuffer(const uint8_t *host_source, da_t *device_desti
  * @return                      FLETCHER_STATUS_OK if successful, FLETCHER_STATUS_ERROR otherwise.
  */
 fstatus_t platformTerminate(void *arg);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
