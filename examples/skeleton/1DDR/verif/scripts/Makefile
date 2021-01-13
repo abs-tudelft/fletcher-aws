@@ -33,8 +33,7 @@ export SDK_DIR = $(AWS_FPGA_REPO_DIR)/sdk
 export C_COMMON_DIR        = $(HDK_COMMON_DIR)/software
 export C_SDK_USR_INC_DIR   = $(SDK_DIR)/userspace/include
 export C_SDK_USR_UTILS_DIR = $(SDK_DIR)/userspace/utils
-export C_INC_DIR  = $(CL_ROOT)/software/runtime
-export C_SRC_DIR  = $(CL_ROOT)/software/runtime
+export C_BUILD_DIR  = $(CL_ROOT)/software/build
 
 #The common fletcher AWS platform code 
 #This Makefile cannot use the library due to link order; 
@@ -49,19 +48,17 @@ ifeq ($(C_TEST),test_null)
   C_FILES += $(C_SDK_USR_UTILS_DIR)/sh_dpi_tasks.c
   C_FILES += $(C_COMMON_DIR)/src/fpga_pci_sv.c
 else
-  C_TEST_NAME = $(C_SRC_DIR)/$(C_TEST).cpp
-  C_TEST_SO = $(C_SRC_DIR)/libtest.so
-  BUILD_WITH_GCC = 1
+  C_TEST_NAME = $(C_BUILD_DIR)/lib$(C_TEST)_lib.so
   ifeq ($(LD_LIBRARY_PATH),)
-    export LD_LIBRARY_PATH=$(C_SRC_DIR)
+    export LD_LIBRARY_PATH=$(C_BUILD_DIR)
   else
-    export LD_LIBRARY_PATH:=$(C_SRC_DIR):$(LD_LIBRARY_PATH)
+    export LD_LIBRARY_PATH:=$(C_BUILD_DIR):$(LD_LIBRARY_PATH)
   endif
   C_FILES = $(C_SDK_USR_UTILS_DIR)/sh_dpi_tasks.c
   C_FILES += $(C_COMMON_DIR)/src/fpga_pci_sv.c
   C_FILES += $(FLETCHER_AWS_SIM_RUNTIME_DIR)/src/fletcher_aws_sim.c
   C_FILES += --gcc_link_options I$(FLETCHER_AWS_SIM_RUNTIME_DIR)/include
-  C_FILES += --gcc_link_options L$(C_SRC_DIR) --gcc_link_options ltest
+  C_FILES += --gcc_link_options L$(C_BUILD_DIR) --gcc_link_options l$(C_TEST)_lib
 endif
 
 export SIM_ROOT = $(CL_ROOT)/verif/sim/$(SIMULATOR)
@@ -108,15 +105,9 @@ export SH_SH_DIR   = $(HDK_SHELL_DESIGN_DIR)/sh_ddr/sim
 SV_TEST_LIST = test_hello_world
 
 ifeq ($(XCHK), 1)
-  all:	build_test make_sim_dir compile_chk run
+  all:	make_sim_dir compile_chk run
 else
-  all:	build_test make_sim_dir compile run
-endif
-
-.PHONY: build_test
-build_test:
-ifdef BUILD_WITH_GCC
-	g++ -shared -fPIC -std=c++11 -o $(C_TEST_SO) -DSV_TEST=1 $(C_TEST_NAME) -lfletcher
+  all:	make_sim_dir compile run
 endif
 
 include $(HDK_COMMON_DIR)/verif/tb/scripts/Makefile.common.inc
