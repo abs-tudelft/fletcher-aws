@@ -20,7 +20,7 @@ FetchContent_Declare(cmake-modules
 )
 FetchContent_MakeAvailable(cmake-modules)
 
-add_subdirectory(../fletcher/common/c c)
+add_subdirectory(../../fletcher/common/c c)
 
 include(CompileUnits)
 
