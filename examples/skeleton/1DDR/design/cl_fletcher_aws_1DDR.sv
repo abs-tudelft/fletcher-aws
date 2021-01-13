@@ -74,6 +74,10 @@ assign cl_sh_ddr_awburst[1:0] = 2'h0;
 
 assign clk = clk_main_a0;
 
+assign cl_sh_id0 = `CL_SH_ID0;
+assign cl_sh_id1 = `CL_SH_ID1;
+
+
 //reset synchronizer
 lib_pipe #(.WIDTH(1), .STAGES(4)) PIPE_RST_N (.clk(clk), .rst_n(1'b1), .in_bus(rst_main_n), .out_bus(pipe_rst_n));
    
