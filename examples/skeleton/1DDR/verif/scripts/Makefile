@@ -98,9 +98,6 @@ ifeq ($(C_TEST),test_null)
   endif
 else
   export SIM_DIR = $(SIM_ROOT)/$(C_TEST)_c
-  ifndef TEST_RECORDBATCH_BASE
-    $(error Environment variable TEST_RECORDBATCH_BASE not set. Please set this environment variable to the location (including the path) of the test recordbatches (with the same schema that was passed to fletchgen to generate the base vhdl design), excluding the number+extension suffix (000.rb). For example: `export TEST_RECORDBATCH_BASE=~/workspaces/example/gen/rematch`.)
-  endif
 endif
 
 export XILINX_IP   = $(HDK_SHELL_DESIGN_DIR)/ip
@@ -119,7 +116,7 @@ endif
 .PHONY: build_test
 build_test:
 ifdef BUILD_WITH_GCC
-	g++ -shared -fPIC -std=c++11 -o $(C_TEST_SO) -DSV_TEST=1 $(C_TEST_NAME) -lfletcher_aws_sim -lfletcher
+	g++ -shared -fPIC -std=c++11 -o $(C_TEST_SO) -DSV_TEST=1 $(C_TEST_NAME) -lfletcher
 endif
 
 include $(HDK_COMMON_DIR)/verif/tb/scripts/Makefile.common.inc
