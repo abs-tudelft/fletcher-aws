@@ -84,16 +84,9 @@ ${HDK_SHELL_DESIGN_DIR}/sh_ddr/sim/sh_ddr.sv
 
 
 --define DISABLE_VJTAG_DEBUG
-${CL_ROOT}/design/mem_scrb.sv
-${CL_ROOT}/design/cl_tst_scrb.sv
-${CL_ROOT}/design/cl_tst.sv
-${CL_ROOT}/design/cl_int_tst.sv
 ${CL_ROOT}/design/cl_dram_dma_pkg.sv
 ${CL_ROOT}/design/cl_dma_pcis_slv.sv
-${CL_ROOT}/design/cl_pcim_mstr.sv
 ${CL_ROOT}/design/cl_ila.sv
 ${CL_ROOT}/design/cl_vio.sv
-${CL_ROOT}/design/cl_int_slv.sv
-${CL_ROOT}/design/cl_ocl_slv.sv
 ${CL_ROOT}/design/cl_fletcher_aws_4DDR.sv
 

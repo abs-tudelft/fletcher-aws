@@ -13,21 +13,11 @@
 // implied. See the License for the specific language governing permissions and
 // limitations under the License.
 
-module cl_dma_pcis_slv #(parameter SCRB_MAX_ADDR = 64'h3FFFFFFFF, parameter SCRB_BURST_LEN_MINUS1 = 15, parameter NO_SCRB_INST = 1)
+module cl_dma_pcis_slv #()
 
 (
     input aclk,
     input aresetn,
-
-    cfg_bus_t.master ddra_tst_cfg_bus,
-    cfg_bus_t.master ddrb_tst_cfg_bus,
-    cfg_bus_t.master ddrc_tst_cfg_bus,
-    cfg_bus_t.master ddrd_tst_cfg_bus,
-
-    scrb_bus_t.master ddra_scrb_bus,
-    scrb_bus_t.master ddrb_scrb_bus,
-    scrb_bus_t.master ddrc_scrb_bus,
-    scrb_bus_t.master ddrd_scrb_bus,
 
     axi_bus_t.master sh_cl_dma_pcis_bus,
     axi_bus_t.master cl_axi_mstr_bus,
@@ -42,8 +32,6 @@ module cl_dma_pcis_slv #(parameter SCRB_MAX_ADDR = 64'h3FFFFFFFF, parameter SCRB
 
 
 );
-localparam NUM_CFG_STGS_CL_DDR_ATG = 4;
-localparam NUM_CFG_STGS_SH_DDR_ATG = 4;
 
 //----------------------------
 // Internal signals
@@ -54,23 +42,8 @@ axi_bus_t lcl_cl_sh_ddrd_q();
 axi_bus_t lcl_cl_sh_ddra_q2();
 axi_bus_t lcl_cl_sh_ddrb_q2();
 axi_bus_t lcl_cl_sh_ddrd_q2();
-axi_bus_t lcl_cl_sh_ddra_q3();
-axi_bus_t lcl_cl_sh_ddrb_q3();
-axi_bus_t lcl_cl_sh_ddrd_q3();
 axi_bus_t cl_sh_ddr_q();
-axi_bus_t cl_sh_ddr_q2();
-axi_bus_t cl_sh_ddr_q3();
 axi_bus_t sh_cl_pcis();
-
-cfg_bus_t ddra_tst_cfg_bus_q();
-cfg_bus_t ddrb_tst_cfg_bus_q();
-cfg_bus_t ddrc_tst_cfg_bus_q();
-cfg_bus_t ddrd_tst_cfg_bus_q();
-
-scrb_bus_t ddra_scrb_bus_q();
-scrb_bus_t ddrb_scrb_bus_q();
-scrb_bus_t ddrc_scrb_bus_q();
-scrb_bus_t ddrd_scrb_bus_q();
 
 //----------------------------
 // End Internal signals
@@ -440,219 +413,33 @@ lib_pipe #(.WIDTH(1), .STAGES(4)) SLR2_PIPE_RST_N (.clk(aclk), .rst_n(1'b1), .in
        .s_axi_rlast    (cl_sh_ddr_q.rlast),
        .s_axi_rvalid   (cl_sh_ddr_q.rvalid),
        .s_axi_rready   (cl_sh_ddr_q.rready),
-       .m_axi_awid     (cl_sh_ddr_q2.awid),
-       .m_axi_awaddr   (cl_sh_ddr_q2.awaddr),
-       .m_axi_awlen    (cl_sh_ddr_q2.awlen),
-       .m_axi_awsize   (cl_sh_ddr_q2.awsize),
-       .m_axi_awvalid  (cl_sh_ddr_q2.awvalid),
-       .m_axi_awready  (cl_sh_ddr_q2.awready),
-       .m_axi_wdata    (cl_sh_ddr_q2.wdata),
-       .m_axi_wstrb    (cl_sh_ddr_q2.wstrb),
-       .m_axi_wlast    (cl_sh_ddr_q2.wlast),
-       .m_axi_wvalid   (cl_sh_ddr_q2.wvalid),
-       .m_axi_wready   (cl_sh_ddr_q2.wready),
-       .m_axi_bid      (cl_sh_ddr_q2.bid),
-       .m_axi_bresp    (cl_sh_ddr_q2.bresp),
-       .m_axi_bvalid   (cl_sh_ddr_q2.bvalid),
-       .m_axi_bready   (cl_sh_ddr_q2.bready),
-       .m_axi_arid     (cl_sh_ddr_q2.arid),
-       .m_axi_araddr   (cl_sh_ddr_q2.araddr),
-       .m_axi_arlen    (cl_sh_ddr_q2.arlen),
-       .m_axi_arsize   (cl_sh_ddr_q2.arsize),
-       .m_axi_arvalid  (cl_sh_ddr_q2.arvalid),
-       .m_axi_arready  (cl_sh_ddr_q2.arready),
-       .m_axi_rid      (cl_sh_ddr_q2.rid),
-       .m_axi_rdata    (cl_sh_ddr_q2.rdata),
-       .m_axi_rresp    (cl_sh_ddr_q2.rresp),
-       .m_axi_rlast    (cl_sh_ddr_q2.rlast),
-       .m_axi_rvalid   (cl_sh_ddr_q2.rvalid),
-       .m_axi_rready   (cl_sh_ddr_q2.rready)
-   );
-
-
-//----------------------------
-// ATG/scrubber for DDRC
-//----------------------------
-
-   lib_pipe #(.WIDTH(32+32+1+1), .STAGES(NUM_CFG_STGS_SH_DDR_ATG)) PIPE_CFG_REQ_DDR_C (.clk (aclk),
-                                                              .rst_n (aresetn),
-                                                              .in_bus({ddrc_tst_cfg_bus.addr, ddrc_tst_cfg_bus.wdata, ddrc_tst_cfg_bus.wr, ddrc_tst_cfg_bus.rd}),
-                                                              .out_bus({ddrc_tst_cfg_bus_q.addr, ddrc_tst_cfg_bus_q.wdata, ddrc_tst_cfg_bus_q.wr, ddrc_tst_cfg_bus_q.rd})
-                                                              );
-
-   lib_pipe #(.WIDTH(32+1), .STAGES(NUM_CFG_STGS_SH_DDR_ATG)) PIPE_CFG_ACK_DDR_C (.clk (aclk),
-                                                              .rst_n (aresetn),
-                                                              .in_bus({ddrc_tst_cfg_bus_q.ack, ddrc_tst_cfg_bus_q.rdata}),
-                                                              .out_bus({ddrc_tst_cfg_bus.ack, ddrc_tst_cfg_bus.rdata})
-                                                              );
-
-
-   lib_pipe #(.WIDTH(2+3+64), .STAGES(NUM_CFG_STGS_SH_DDR_ATG)) PIPE_SCRB_DDR_C (.clk(aclk),
-                                                              .rst_n(aresetn),
-                                                              .in_bus({ddrc_scrb_bus.enable, ddrc_scrb_bus_q.done, ddrc_scrb_bus_q.state, ddrc_scrb_bus_q.addr}),
-                                                              .out_bus({ddrc_scrb_bus_q.enable, ddrc_scrb_bus.done, ddrc_scrb_bus.state, ddrc_scrb_bus.addr})
-                                                              );
-   cl_tst_scrb #(.DATA_WIDTH(512),
-                    .SCRB_BURST_LEN_MINUS1(SCRB_BURST_LEN_MINUS1),
-                    .SCRB_MAX_ADDR(SCRB_MAX_ADDR),
-                    .NO_SCRB_INST(NO_SCRB_INST)) CL_TST_DDR_C (
-
-         .clk(aclk),
-         .rst_n(slr1_sync_aresetn),
-
-         .cfg_addr(ddrc_tst_cfg_bus_q.addr),
-         .cfg_wdata(ddrc_tst_cfg_bus_q.wdata),
-         .cfg_wr(ddrc_tst_cfg_bus_q.wr),
-         .cfg_rd(ddrc_tst_cfg_bus_q.rd),
-         .tst_cfg_ack(ddrc_tst_cfg_bus_q.ack),
-         .tst_cfg_rdata(ddrc_tst_cfg_bus_q.rdata),
-
-         .slv_awid(cl_sh_ddr_q2.awid[6:0]),
-         .slv_awaddr(cl_sh_ddr_q2.awaddr),
-         .slv_awlen(cl_sh_ddr_q2.awlen),
-         .slv_awvalid(cl_sh_ddr_q2.awvalid),
-         .slv_awsize(cl_sh_ddr_q2.awsize),
-         .slv_awuser(11'b0),
-         .slv_awready(cl_sh_ddr_q2.awready),
-
-         .slv_wid(7'b0),
-         .slv_wdata(cl_sh_ddr_q2.wdata),
-         .slv_wstrb(cl_sh_ddr_q2.wstrb),
-         .slv_wlast(cl_sh_ddr_q2.wlast),
-         .slv_wvalid(cl_sh_ddr_q2.wvalid),
-         .slv_wready(cl_sh_ddr_q2.wready),
-
-         .slv_bid(cl_sh_ddr_q2.bid[6:0]),
-         .slv_bresp(cl_sh_ddr_q2.bresp),
-         .slv_buser(),
-         .slv_bvalid(cl_sh_ddr_q2.bvalid),
-         .slv_bready(cl_sh_ddr_q2.bready),
-
-         .slv_arid(cl_sh_ddr_q2.arid[6:0]),
-         .slv_araddr(cl_sh_ddr_q2.araddr),
-         .slv_arlen(cl_sh_ddr_q2.arlen),
-         .slv_arvalid(cl_sh_ddr_q2.arvalid),
-         .slv_arsize(cl_sh_ddr_q2.arsize),
-         .slv_aruser(11'b0),
-         .slv_arready(cl_sh_ddr_q2.arready),
-
-         .slv_rid(cl_sh_ddr_q2.rid[6:0]),
-         .slv_rdata(cl_sh_ddr_q2.rdata),
-         .slv_rresp(cl_sh_ddr_q2.rresp),
-         .slv_rlast(cl_sh_ddr_q2.rlast),
-         .slv_ruser(),
-         .slv_rvalid(cl_sh_ddr_q2.rvalid),
-         .slv_rready(cl_sh_ddr_q2.rready),
-
-
-         .awid(cl_sh_ddr_q3.awid[8:0]),
-         .awaddr(cl_sh_ddr_q3.awaddr),
-         .awlen(cl_sh_ddr_q3.awlen),
-         .awvalid(cl_sh_ddr_q3.awvalid),
-         .awsize(cl_sh_ddr_q3.awsize),
-         .awuser(),
-         .awready(cl_sh_ddr_q3.awready),
-
-         //.wid(cl_sh_ddr_q3.wid),
-         .wid(),
-         .wdata(cl_sh_ddr_q3.wdata),
-         .wstrb(cl_sh_ddr_q3.wstrb),
-         .wlast(cl_sh_ddr_q3.wlast),
-         .wvalid(cl_sh_ddr_q3.wvalid),
-         .wready(cl_sh_ddr_q3.wready),
-
-         .bid(cl_sh_ddr_q3.bid[8:0]),
-         .bresp(cl_sh_ddr_q3.bresp),
-         .buser(18'h0),
-         .bvalid(cl_sh_ddr_q3.bvalid),
-         .bready(cl_sh_ddr_q3.bready),
-
-         .arid(cl_sh_ddr_q3.arid[8:0]),
-         .araddr(cl_sh_ddr_q3.araddr),
-         .arlen(cl_sh_ddr_q3.arlen),
-         .arvalid(cl_sh_ddr_q3.arvalid),
-         .arsize(cl_sh_ddr_q3.arsize),
-         .aruser(),
-         .arready(cl_sh_ddr_q3.arready),
-
-         .rid(cl_sh_ddr_q3.rid[8:0]),
-         .rdata(cl_sh_ddr_q3.rdata),
-         .rresp(cl_sh_ddr_q3.rresp),
-         .rlast(cl_sh_ddr_q3.rlast),
-         .ruser(18'h0),
-         .rvalid(cl_sh_ddr_q3.rvalid),
-         .rready(cl_sh_ddr_q3.rready),
-
-         .scrb_enable(ddrc_scrb_bus_q.enable),
-         .scrb_done  (ddrc_scrb_bus_q.done),
-
-         .scrb_dbg_state(ddrc_scrb_bus_q.state),
-         .scrb_dbg_addr (ddrc_scrb_bus_q.addr)
-   );
-
-//----------------------------
-// flop the output of ATG/Scrubber for DDRC
-//----------------------------
-
-   axi_register_slice DDR_C_TST_AXI4_REG_SLC_1 (
-     .aclk           (aclk),
-     .aresetn        (slr1_sync_aresetn),
-
-     .s_axi_awid     (cl_sh_ddr_q3.awid),
-     .s_axi_awaddr   (cl_sh_ddr_q3.awaddr),
-     .s_axi_awlen    (cl_sh_ddr_q3.awlen),
-     .s_axi_awsize   (cl_sh_ddr_q3.awsize),
-     .s_axi_awvalid  (cl_sh_ddr_q3.awvalid),
-     .s_axi_awready  (cl_sh_ddr_q3.awready),
-     .s_axi_wdata    (cl_sh_ddr_q3.wdata),
-     .s_axi_wstrb    (cl_sh_ddr_q3.wstrb),
-     .s_axi_wlast    (cl_sh_ddr_q3.wlast),
-     .s_axi_wvalid   (cl_sh_ddr_q3.wvalid),
-     .s_axi_wready   (cl_sh_ddr_q3.wready),
-     .s_axi_bid      (cl_sh_ddr_q3.bid),
-     .s_axi_bresp    (cl_sh_ddr_q3.bresp),
-     .s_axi_bvalid   (cl_sh_ddr_q3.bvalid),
-     .s_axi_bready   (cl_sh_ddr_q3.bready),
-     .s_axi_arid     (cl_sh_ddr_q3.arid),
-     .s_axi_araddr   (cl_sh_ddr_q3.araddr),
-     .s_axi_arlen    (cl_sh_ddr_q3.arlen),
-     .s_axi_arsize   (cl_sh_ddr_q3.arsize),
-     .s_axi_arvalid  (cl_sh_ddr_q3.arvalid),
-     .s_axi_arready  (cl_sh_ddr_q3.arready),
-     .s_axi_rid      (cl_sh_ddr_q3.rid),
-     .s_axi_rdata    (cl_sh_ddr_q3.rdata),
-     .s_axi_rresp    (cl_sh_ddr_q3.rresp),
-     .s_axi_rlast    (cl_sh_ddr_q3.rlast),
-     .s_axi_rvalid   (cl_sh_ddr_q3.rvalid),
-     .s_axi_rready   (cl_sh_ddr_q3.rready),
-
-     .m_axi_awid     (cl_sh_ddr_bus.awid),
-     .m_axi_awaddr   (cl_sh_ddr_bus.awaddr),
-     .m_axi_awlen    (cl_sh_ddr_bus.awlen),
-     .m_axi_awsize   (cl_sh_ddr_bus.awsize),
-     .m_axi_awvalid  (cl_sh_ddr_bus.awvalid),
-     .m_axi_awready  (cl_sh_ddr_bus.awready),
-     .m_axi_wdata    (cl_sh_ddr_bus.wdata),
-     .m_axi_wstrb    (cl_sh_ddr_bus.wstrb),
-     .m_axi_wlast    (cl_sh_ddr_bus.wlast),
-     .m_axi_wvalid   (cl_sh_ddr_bus.wvalid),
-     .m_axi_wready   (cl_sh_ddr_bus.wready),
-     .m_axi_bid      (cl_sh_ddr_bus.bid),
-     .m_axi_bresp    (cl_sh_ddr_bus.bresp),
-     .m_axi_bvalid   (cl_sh_ddr_bus.bvalid),
-     .m_axi_bready   (cl_sh_ddr_bus.bready),
-     .m_axi_arid     (cl_sh_ddr_bus.arid),
-     .m_axi_araddr   (cl_sh_ddr_bus.araddr),
-     .m_axi_arlen    (cl_sh_ddr_bus.arlen),
-     .m_axi_arsize   (cl_sh_ddr_bus.arsize),
-     .m_axi_arvalid  (cl_sh_ddr_bus.arvalid),
-     .m_axi_arready  (cl_sh_ddr_bus.arready),
-     .m_axi_rid      (cl_sh_ddr_bus.rid),
-     .m_axi_rdata    (cl_sh_ddr_bus.rdata),
-     .m_axi_rresp    (cl_sh_ddr_bus.rresp),
-     .m_axi_rlast    (cl_sh_ddr_bus.rlast),
-     .m_axi_rvalid   (cl_sh_ddr_bus.rvalid),
-     .m_axi_rready   (cl_sh_ddr_bus.rready)
+       .m_axi_awid     (cl_sh_ddr_bus.awid),
+       .m_axi_awaddr   (cl_sh_ddr_bus.awaddr),
+       .m_axi_awlen    (cl_sh_ddr_bus.awlen),
+       .m_axi_awsize   (cl_sh_ddr_bus.awsize),
+       .m_axi_awvalid  (cl_sh_ddr_bus.awvalid),
+       .m_axi_awready  (cl_sh_ddr_bus.awready),
+       .m_axi_wdata    (cl_sh_ddr_bus.wdata),
+       .m_axi_wstrb    (cl_sh_ddr_bus.wstrb),
+       .m_axi_wlast    (cl_sh_ddr_bus.wlast),
+       .m_axi_wvalid   (cl_sh_ddr_bus.wvalid),
+       .m_axi_wready   (cl_sh_ddr_bus.wready),
+       .m_axi_bid      (cl_sh_ddr_bus.bid),
+       .m_axi_bresp    (cl_sh_ddr_bus.bresp),
+       .m_axi_bvalid   (cl_sh_ddr_bus.bvalid),
+       .m_axi_bready   (cl_sh_ddr_bus.bready),
+       .m_axi_arid     (cl_sh_ddr_bus.arid),
+       .m_axi_araddr   (cl_sh_ddr_bus.araddr),
+       .m_axi_arlen    (cl_sh_ddr_bus.arlen),
+       .m_axi_arsize   (cl_sh_ddr_bus.arsize),
+       .m_axi_arvalid  (cl_sh_ddr_bus.arvalid),
+       .m_axi_arready  (cl_sh_ddr_bus.arready),
+       .m_axi_rid      (cl_sh_ddr_bus.rid),
+       .m_axi_rdata    (cl_sh_ddr_bus.rdata),
+       .m_axi_rresp    (cl_sh_ddr_bus.rresp),
+       .m_axi_rlast    (cl_sh_ddr_bus.rlast),
+       .m_axi_rvalid   (cl_sh_ddr_bus.rvalid),
+       .m_axi_rready   (cl_sh_ddr_bus.rready)
    );
 
 
@@ -785,165 +572,47 @@ lib_pipe #(.WIDTH(1), .STAGES(4)) SLR2_PIPE_RST_N (.clk(aclk), .rst_n(1'b1), .in
        .s_axi_rlast    (lcl_cl_sh_ddra_q2.rlast),
        .s_axi_rvalid   (lcl_cl_sh_ddra_q2.rvalid),
        .s_axi_rready   (lcl_cl_sh_ddra_q2.rready),
-       .m_axi_awid     (lcl_cl_sh_ddra_q3.awid),
-       .m_axi_awaddr   (lcl_cl_sh_ddra_q3.awaddr),
-       .m_axi_awlen    (lcl_cl_sh_ddra_q3.awlen),
-       .m_axi_awsize   (lcl_cl_sh_ddra_q3.awsize),
+       .m_axi_awid     (lcl_cl_sh_ddra.awid),
+       .m_axi_awaddr   (lcl_cl_sh_ddra.awaddr),
+       .m_axi_awlen    (lcl_cl_sh_ddra.awlen),
+       .m_axi_awsize   (lcl_cl_sh_ddra.awsize),
        .m_axi_awburst  (),
        .m_axi_awlock   (),
        .m_axi_awcache  (),
        .m_axi_awprot   (),
        .m_axi_awregion (),
        .m_axi_awqos    (),
-       .m_axi_awvalid  (lcl_cl_sh_ddra_q3.awvalid),
-       .m_axi_awready  (lcl_cl_sh_ddra_q3.awready),
-       .m_axi_wdata    (lcl_cl_sh_ddra_q3.wdata),
-       .m_axi_wstrb    (lcl_cl_sh_ddra_q3.wstrb),
-       .m_axi_wlast    (lcl_cl_sh_ddra_q3.wlast),
-       .m_axi_wvalid   (lcl_cl_sh_ddra_q3.wvalid),
-       .m_axi_wready   (lcl_cl_sh_ddra_q3.wready),
-       .m_axi_bid      (lcl_cl_sh_ddra_q3.bid),
-       .m_axi_bresp    (lcl_cl_sh_ddra_q3.bresp),
-       .m_axi_bvalid   (lcl_cl_sh_ddra_q3.bvalid),
-       .m_axi_bready   (lcl_cl_sh_ddra_q3.bready),
-       .m_axi_arid     (lcl_cl_sh_ddra_q3.arid),
-       .m_axi_araddr   (lcl_cl_sh_ddra_q3.araddr),
-       .m_axi_arlen    (lcl_cl_sh_ddra_q3.arlen),
-       .m_axi_arsize   (lcl_cl_sh_ddra_q3.arsize),
+       .m_axi_awvalid  (lcl_cl_sh_ddra.awvalid),
+       .m_axi_awready  (lcl_cl_sh_ddra.awready),
+       .m_axi_wdata    (lcl_cl_sh_ddra.wdata),
+       .m_axi_wstrb    (lcl_cl_sh_ddra.wstrb),
+       .m_axi_wlast    (lcl_cl_sh_ddra.wlast),
+       .m_axi_wvalid   (lcl_cl_sh_ddra.wvalid),
+       .m_axi_wready   (lcl_cl_sh_ddra.wready),
+       .m_axi_bid      (lcl_cl_sh_ddra.bid),
+       .m_axi_bresp    (lcl_cl_sh_ddra.bresp),
+       .m_axi_bvalid   (lcl_cl_sh_ddra.bvalid),
+       .m_axi_bready   (lcl_cl_sh_ddra.bready),
+       .m_axi_arid     (lcl_cl_sh_ddra.arid),
+       .m_axi_araddr   (lcl_cl_sh_ddra.araddr),
+       .m_axi_arlen    (lcl_cl_sh_ddra.arlen),
+       .m_axi_arsize   (lcl_cl_sh_ddra.arsize),
        .m_axi_arburst  (),
        .m_axi_arlock   (),
        .m_axi_arcache  (),
        .m_axi_arprot   (),
        .m_axi_arregion (),
        .m_axi_arqos    (),
-       .m_axi_arvalid  (lcl_cl_sh_ddra_q3.arvalid),
-       .m_axi_arready  (lcl_cl_sh_ddra_q3.arready),
-       .m_axi_rid      (lcl_cl_sh_ddra_q3.rid),
-       .m_axi_rdata    (lcl_cl_sh_ddra_q3.rdata),
-       .m_axi_rresp    (lcl_cl_sh_ddra_q3.rresp),
-       .m_axi_rlast    (lcl_cl_sh_ddra_q3.rlast),
-       .m_axi_rvalid   (lcl_cl_sh_ddra_q3.rvalid),
-       .m_axi_rready   (lcl_cl_sh_ddra_q3.rready)
+       .m_axi_arvalid  (lcl_cl_sh_ddra.arvalid),
+       .m_axi_arready  (lcl_cl_sh_ddra.arready),
+       .m_axi_rid      (lcl_cl_sh_ddra.rid),
+       .m_axi_rdata    (lcl_cl_sh_ddra.rdata),
+       .m_axi_rresp    (lcl_cl_sh_ddra.rresp),
+       .m_axi_rlast    (lcl_cl_sh_ddra.rlast),
+       .m_axi_rvalid   (lcl_cl_sh_ddra.rvalid),
+       .m_axi_rready   (lcl_cl_sh_ddra.rready)
        );
 
-//----------------------------
-// ATG/scrubber for DDRA
-//----------------------------
-   lib_pipe #(.WIDTH(32+32+1+1), .STAGES(NUM_CFG_STGS_CL_DDR_ATG)) PIPE_CFG_REQ_DDR_A (.clk (aclk),
-                                                              .rst_n (aresetn),
-                                                              .in_bus({ddra_tst_cfg_bus.addr, ddra_tst_cfg_bus.wdata, ddra_tst_cfg_bus.wr, ddra_tst_cfg_bus.rd}),
-                                                              .out_bus({ddra_tst_cfg_bus_q.addr, ddra_tst_cfg_bus_q.wdata, ddra_tst_cfg_bus_q.wr, ddra_tst_cfg_bus_q.rd})
-                                                              );
-
-   lib_pipe #(.WIDTH(32+1), .STAGES(NUM_CFG_STGS_CL_DDR_ATG)) PIPE_CFG_ACK_DDR_A (.clk (aclk),
-                                                              .rst_n (aresetn),
-                                                              .in_bus({ddra_tst_cfg_bus_q.ack, ddra_tst_cfg_bus_q.rdata}),
-                                                              .out_bus({ddra_tst_cfg_bus.ack, ddra_tst_cfg_bus.rdata})
-                                                              );
-
-
-   lib_pipe #(.WIDTH(2+3+64), .STAGES(NUM_CFG_STGS_CL_DDR_ATG)) PIPE_SCRB_DDR_A (.clk(aclk),
-                                                              .rst_n(aresetn),
-                                                              .in_bus({ddra_scrb_bus.enable, ddra_scrb_bus_q.done, ddra_scrb_bus_q.state, ddra_scrb_bus_q.addr}),
-                                                              .out_bus({ddra_scrb_bus_q.enable, ddra_scrb_bus.done, ddra_scrb_bus.state, ddra_scrb_bus.addr})
-                                                              );
-
-   cl_tst_scrb #(.DATA_WIDTH(512),
-                    .SCRB_BURST_LEN_MINUS1(SCRB_BURST_LEN_MINUS1),
-                    .SCRB_MAX_ADDR(SCRB_MAX_ADDR),
-                    .NO_SCRB_INST(NO_SCRB_INST)) CL_TST_DDR_A (
-
-         .clk(aclk),
-         .rst_n(slr2_sync_aresetn),
-
-         .cfg_addr(ddra_tst_cfg_bus_q.addr),
-         .cfg_wdata(ddra_tst_cfg_bus_q.wdata),
-         .cfg_wr(ddra_tst_cfg_bus_q.wr),
-         .cfg_rd(ddra_tst_cfg_bus_q.rd),
-         .tst_cfg_ack(ddra_tst_cfg_bus_q.ack),
-         .tst_cfg_rdata(ddra_tst_cfg_bus_q.rdata),
-
-         .slv_awid(lcl_cl_sh_ddra_q3.awid[6:0]),
-         .slv_awaddr(lcl_cl_sh_ddra_q3.awaddr),
-         .slv_awlen(lcl_cl_sh_ddra_q3.awlen),
-         .slv_awsize(lcl_cl_sh_ddra_q3.awsize),
-         .slv_awvalid(lcl_cl_sh_ddra_q3.awvalid),
-         .slv_awuser(11'b0),
-         .slv_awready(lcl_cl_sh_ddra_q3.awready),
-
-         .slv_wid(7'b0),
-         .slv_wdata(lcl_cl_sh_ddra_q3.wdata),
-         .slv_wstrb(lcl_cl_sh_ddra_q3.wstrb),
-         .slv_wlast(lcl_cl_sh_ddra_q3.wlast),
-         .slv_wvalid(lcl_cl_sh_ddra_q3.wvalid),
-         .slv_wready(lcl_cl_sh_ddra_q3.wready),
-
-         .slv_bid(lcl_cl_sh_ddra_q3.bid[6:0]),
-         .slv_bresp(lcl_cl_sh_ddra_q3.bresp),
-         .slv_buser(),
-         .slv_bvalid(lcl_cl_sh_ddra_q3.bvalid),
-         .slv_bready(lcl_cl_sh_ddra_q3.bready),
-
-         .slv_arid(lcl_cl_sh_ddra_q3.arid[6:0]),
-         .slv_araddr(lcl_cl_sh_ddra_q3.araddr),
-         .slv_arlen(lcl_cl_sh_ddra_q3.arlen),
-         .slv_arsize(lcl_cl_sh_ddra_q3.arsize),
-         .slv_arvalid(lcl_cl_sh_ddra_q3.arvalid),
-         .slv_aruser(11'b0),
-         .slv_arready(lcl_cl_sh_ddra_q3.arready),
-
-         .slv_rid(lcl_cl_sh_ddra_q3.rid[6:0]),
-         .slv_rdata(lcl_cl_sh_ddra_q3.rdata),
-         .slv_rresp(lcl_cl_sh_ddra_q3.rresp),
-         .slv_rlast(lcl_cl_sh_ddra_q3.rlast),
-         .slv_ruser(),
-         .slv_rvalid(lcl_cl_sh_ddra_q3.rvalid),
-         .slv_rready(lcl_cl_sh_ddra_q3.rready),
-
-
-         .awid(lcl_cl_sh_ddra.awid[8:0]),
-         .awaddr(lcl_cl_sh_ddra.awaddr),
-         .awlen(lcl_cl_sh_ddra.awlen),
-         .awsize(lcl_cl_sh_ddra.awsize),
-         .awvalid(lcl_cl_sh_ddra.awvalid),
-         .awuser(),
-         .awready(lcl_cl_sh_ddra.awready),
-
-         .wid(lcl_cl_sh_ddra.wid[8:0]),
-         .wdata(lcl_cl_sh_ddra.wdata),
-         .wstrb(lcl_cl_sh_ddra.wstrb),
-         .wlast(lcl_cl_sh_ddra.wlast),
-         .wvalid(lcl_cl_sh_ddra.wvalid),
-         .wready(lcl_cl_sh_ddra.wready),
-
-         .bid(lcl_cl_sh_ddra.bid[8:0]),
-         .bresp(lcl_cl_sh_ddra.bresp),
-         .buser(18'h0),
-         .bvalid(lcl_cl_sh_ddra.bvalid),
-         .bready(lcl_cl_sh_ddra.bready),
-
-         .arid(lcl_cl_sh_ddra.arid[8:0]),
-         .araddr(lcl_cl_sh_ddra.araddr),
-         .arlen(lcl_cl_sh_ddra.arlen),
-         .arsize(lcl_cl_sh_ddra.arsize),
-         .arvalid(lcl_cl_sh_ddra.arvalid),
-         .aruser(),
-         .arready(lcl_cl_sh_ddra.arready),
-
-         .rid(lcl_cl_sh_ddra.rid[8:0]),
-         .rdata(lcl_cl_sh_ddra.rdata),
-         .rresp(lcl_cl_sh_ddra.rresp),
-         .rlast(lcl_cl_sh_ddra.rlast),
-         .ruser(18'h0),
-         .rvalid(lcl_cl_sh_ddra.rvalid),
-         .rready(lcl_cl_sh_ddra.rready),
-
-         .scrb_enable(ddra_scrb_bus_q.enable),
-         .scrb_done  (ddra_scrb_bus_q.done),
-
-         .scrb_dbg_state(ddra_scrb_bus_q.state),
-         .scrb_dbg_addr (ddra_scrb_bus_q.addr)
-      );
       assign lcl_cl_sh_ddra.awid[15:9] = 7'b0;
       assign lcl_cl_sh_ddra.wid[15:9] = 7'b0;
       assign lcl_cl_sh_ddra.arid[15:9] = 7'b0;
@@ -1078,165 +747,47 @@ lib_pipe #(.WIDTH(1), .STAGES(4)) SLR2_PIPE_RST_N (.clk(aclk), .rst_n(1'b1), .in
        .s_axi_rlast    (lcl_cl_sh_ddrb_q2.rlast),
        .s_axi_rvalid   (lcl_cl_sh_ddrb_q2.rvalid),
        .s_axi_rready   (lcl_cl_sh_ddrb_q2.rready),
-       .m_axi_awid     (lcl_cl_sh_ddrb_q3.awid),
-       .m_axi_awaddr   (lcl_cl_sh_ddrb_q3.awaddr),
-       .m_axi_awlen    (lcl_cl_sh_ddrb_q3.awlen),
-       .m_axi_awsize   (lcl_cl_sh_ddrb_q3.awsize),
+       .m_axi_awid     (lcl_cl_sh_ddrb.awid),
+       .m_axi_awaddr   (lcl_cl_sh_ddrb.awaddr),
+       .m_axi_awlen    (lcl_cl_sh_ddrb.awlen),
+       .m_axi_awsize   (lcl_cl_sh_ddrb.awsize),
        .m_axi_awburst  (),
        .m_axi_awlock   (),
        .m_axi_awcache  (),
        .m_axi_awprot   (),
        .m_axi_awregion (),
        .m_axi_awqos    (),
-       .m_axi_awvalid  (lcl_cl_sh_ddrb_q3.awvalid),
-       .m_axi_awready  (lcl_cl_sh_ddrb_q3.awready),
-       .m_axi_wdata    (lcl_cl_sh_ddrb_q3.wdata),
-       .m_axi_wstrb    (lcl_cl_sh_ddrb_q3.wstrb),
-       .m_axi_wlast    (lcl_cl_sh_ddrb_q3.wlast),
-       .m_axi_wvalid   (lcl_cl_sh_ddrb_q3.wvalid),
-       .m_axi_wready   (lcl_cl_sh_ddrb_q3.wready),
-       .m_axi_bid      (lcl_cl_sh_ddrb_q3.bid),
-       .m_axi_bresp    (lcl_cl_sh_ddrb_q3.bresp),
-       .m_axi_bvalid   (lcl_cl_sh_ddrb_q3.bvalid),
-       .m_axi_bready   (lcl_cl_sh_ddrb_q3.bready),
-       .m_axi_arid     (lcl_cl_sh_ddrb_q3.arid),
-       .m_axi_araddr   (lcl_cl_sh_ddrb_q3.araddr),
-       .m_axi_arlen    (lcl_cl_sh_ddrb_q3.arlen),
-       .m_axi_arsize   (lcl_cl_sh_ddrb_q3.arsize),
+       .m_axi_awvalid  (lcl_cl_sh_ddrb.awvalid),
+       .m_axi_awready  (lcl_cl_sh_ddrb.awready),
+       .m_axi_wdata    (lcl_cl_sh_ddrb.wdata),
+       .m_axi_wstrb    (lcl_cl_sh_ddrb.wstrb),
+       .m_axi_wlast    (lcl_cl_sh_ddrb.wlast),
+       .m_axi_wvalid   (lcl_cl_sh_ddrb.wvalid),
+       .m_axi_wready   (lcl_cl_sh_ddrb.wready),
+       .m_axi_bid      (lcl_cl_sh_ddrb.bid),
+       .m_axi_bresp    (lcl_cl_sh_ddrb.bresp),
+       .m_axi_bvalid   (lcl_cl_sh_ddrb.bvalid),
+       .m_axi_bready   (lcl_cl_sh_ddrb.bready),
+       .m_axi_arid     (lcl_cl_sh_ddrb.arid),
+       .m_axi_araddr   (lcl_cl_sh_ddrb.araddr),
+       .m_axi_arlen    (lcl_cl_sh_ddrb.arlen),
+       .m_axi_arsize   (lcl_cl_sh_ddrb.arsize),
        .m_axi_arburst  (),
        .m_axi_arlock   (),
        .m_axi_arcache  (),
        .m_axi_arprot   (),
        .m_axi_arregion (),
        .m_axi_arqos    (),
-       .m_axi_arvalid  (lcl_cl_sh_ddrb_q3.arvalid),
-       .m_axi_arready  (lcl_cl_sh_ddrb_q3.arready),
-       .m_axi_rid      (lcl_cl_sh_ddrb_q3.rid),
-       .m_axi_rdata    (lcl_cl_sh_ddrb_q3.rdata),
-       .m_axi_rresp    (lcl_cl_sh_ddrb_q3.rresp),
-       .m_axi_rlast    (lcl_cl_sh_ddrb_q3.rlast),
-       .m_axi_rvalid   (lcl_cl_sh_ddrb_q3.rvalid),
-       .m_axi_rready   (lcl_cl_sh_ddrb_q3.rready)
+       .m_axi_arvalid  (lcl_cl_sh_ddrb.arvalid),
+       .m_axi_arready  (lcl_cl_sh_ddrb.arready),
+       .m_axi_rid      (lcl_cl_sh_ddrb.rid),
+       .m_axi_rdata    (lcl_cl_sh_ddrb.rdata),
+       .m_axi_rresp    (lcl_cl_sh_ddrb.rresp),
+       .m_axi_rlast    (lcl_cl_sh_ddrb.rlast),
+       .m_axi_rvalid   (lcl_cl_sh_ddrb.rvalid),
+       .m_axi_rready   (lcl_cl_sh_ddrb.rready)
        );
 
-//----------------------------
-// ATG/scrubber for DDRB
-//----------------------------
-   lib_pipe #(.WIDTH(32+32+1+1), .STAGES(NUM_CFG_STGS_CL_DDR_ATG)) PIPE_CFG_REQ_DDR_B (.clk (aclk),
-                                                              .rst_n (aresetn),
-                                                              .in_bus({ddrb_tst_cfg_bus.addr, ddrb_tst_cfg_bus.wdata, ddrb_tst_cfg_bus.wr, ddrb_tst_cfg_bus.rd}),
-                                                              .out_bus({ddrb_tst_cfg_bus_q.addr, ddrb_tst_cfg_bus_q.wdata, ddrb_tst_cfg_bus_q.wr, ddrb_tst_cfg_bus_q.rd})
-                                                              );
-
-   lib_pipe #(.WIDTH(32+1), .STAGES(NUM_CFG_STGS_CL_DDR_ATG)) PIPE_CFG_ACK_DDR_B (.clk (aclk),
-                                                              .rst_n (aresetn),
-                                                              .in_bus({ddrb_tst_cfg_bus_q.ack, ddrb_tst_cfg_bus_q.rdata}),
-                                                              .out_bus({ddrb_tst_cfg_bus.ack, ddrb_tst_cfg_bus.rdata})
-                                                              );
-
-
-   lib_pipe #(.WIDTH(2+3+64), .STAGES(NUM_CFG_STGS_CL_DDR_ATG)) PIPE_SCRB_DDR_B (.clk(aclk),
-                                                              .rst_n(aresetn),
-                                                              .in_bus({ddrb_scrb_bus.enable, ddrb_scrb_bus_q.done, ddrb_scrb_bus_q.state, ddrb_scrb_bus_q.addr}),
-                                                              .out_bus({ddrb_scrb_bus_q.enable, ddrb_scrb_bus.done, ddrb_scrb_bus.state, ddrb_scrb_bus.addr})
-                                                              );
-
-   cl_tst_scrb #(.DATA_WIDTH(512),
-                    .SCRB_BURST_LEN_MINUS1(SCRB_BURST_LEN_MINUS1),
-                    .SCRB_MAX_ADDR(SCRB_MAX_ADDR),
-                    .NO_SCRB_INST(NO_SCRB_INST)) CL_TST_DDR_B (
-
-         .clk(aclk),
-         .rst_n(slr1_sync_aresetn),
-
-         .cfg_addr(ddrb_tst_cfg_bus_q.addr),
-         .cfg_wdata(ddrb_tst_cfg_bus_q.wdata),
-         .cfg_wr(ddrb_tst_cfg_bus_q.wr),
-         .cfg_rd(ddrb_tst_cfg_bus_q.rd),
-         .tst_cfg_ack(ddrb_tst_cfg_bus_q.ack),
-         .tst_cfg_rdata(ddrb_tst_cfg_bus_q.rdata),
-
-         .slv_awid(lcl_cl_sh_ddrb_q3.awid[6:0]),
-         .slv_awaddr(lcl_cl_sh_ddrb_q3.awaddr),
-         .slv_awlen(lcl_cl_sh_ddrb_q3.awlen),
-         .slv_awsize(lcl_cl_sh_ddrb_q3.awsize),
-         .slv_awvalid(lcl_cl_sh_ddrb_q3.awvalid),
-         .slv_awuser(11'b0),
-         .slv_awready(lcl_cl_sh_ddrb_q3.awready),
-
-         .slv_wid(7'b0),
-         .slv_wdata(lcl_cl_sh_ddrb_q3.wdata),
-         .slv_wstrb(lcl_cl_sh_ddrb_q3.wstrb),
-         .slv_wlast(lcl_cl_sh_ddrb_q3.wlast),
-         .slv_wvalid(lcl_cl_sh_ddrb_q3.wvalid),
-         .slv_wready(lcl_cl_sh_ddrb_q3.wready),
-
-         .slv_bid(lcl_cl_sh_ddrb_q3.bid[6:0]),
-         .slv_bresp(lcl_cl_sh_ddrb_q3.bresp),
-         .slv_buser(),
-         .slv_bvalid(lcl_cl_sh_ddrb_q3.bvalid),
-         .slv_bready(lcl_cl_sh_ddrb_q3.bready),
-
-         .slv_arid(lcl_cl_sh_ddrb_q3.arid[6:0]),
-         .slv_araddr(lcl_cl_sh_ddrb_q3.araddr),
-         .slv_arlen(lcl_cl_sh_ddrb_q3.arlen),
-         .slv_arsize(lcl_cl_sh_ddrb_q3.arsize),
-         .slv_arvalid(lcl_cl_sh_ddrb_q3.arvalid),
-         .slv_aruser(11'b0),
-         .slv_arready(lcl_cl_sh_ddrb_q3.arready),
-
-         .slv_rid(lcl_cl_sh_ddrb_q3.rid[6:0]),
-         .slv_rdata(lcl_cl_sh_ddrb_q3.rdata),
-         .slv_rresp(lcl_cl_sh_ddrb_q3.rresp),
-         .slv_rlast(lcl_cl_sh_ddrb_q3.rlast),
-         .slv_ruser(),
-         .slv_rvalid(lcl_cl_sh_ddrb_q3.rvalid),
-         .slv_rready(lcl_cl_sh_ddrb_q3.rready),
-
-
-         .awid(lcl_cl_sh_ddrb.awid[8:0]),
-         .awaddr(lcl_cl_sh_ddrb.awaddr),
-         .awlen(lcl_cl_sh_ddrb.awlen),
-         .awsize(lcl_cl_sh_ddrb.awsize),
-         .awvalid(lcl_cl_sh_ddrb.awvalid),
-         .awuser(),
-         .awready(lcl_cl_sh_ddrb.awready),
-
-         .wid(lcl_cl_sh_ddrb.wid[8:0]),
-         .wdata(lcl_cl_sh_ddrb.wdata),
-         .wstrb(lcl_cl_sh_ddrb.wstrb),
-         .wlast(lcl_cl_sh_ddrb.wlast),
-         .wvalid(lcl_cl_sh_ddrb.wvalid),
-         .wready(lcl_cl_sh_ddrb.wready),
-
-         .bid(lcl_cl_sh_ddrb.bid[8:0]),
-         .bresp(lcl_cl_sh_ddrb.bresp),
-         .buser(18'h0),
-         .bvalid(lcl_cl_sh_ddrb.bvalid),
-         .bready(lcl_cl_sh_ddrb.bready),
-
-         .arid(lcl_cl_sh_ddrb.arid[8:0]),
-         .araddr(lcl_cl_sh_ddrb.araddr),
-         .arlen(lcl_cl_sh_ddrb.arlen),
-         .arsize(lcl_cl_sh_ddrb.arsize),
-         .arvalid(lcl_cl_sh_ddrb.arvalid),
-         .aruser(),
-         .arready(lcl_cl_sh_ddrb.arready),
-
-         .rid(lcl_cl_sh_ddrb.rid[8:0]),
-         .rdata(lcl_cl_sh_ddrb.rdata),
-         .rresp(lcl_cl_sh_ddrb.rresp),
-         .rlast(lcl_cl_sh_ddrb.rlast),
-         .ruser(18'h0),
-         .rvalid(lcl_cl_sh_ddrb.rvalid),
-         .rready(lcl_cl_sh_ddrb.rready),
-
-         .scrb_enable(ddrb_scrb_bus_q.enable),
-         .scrb_done  (ddrb_scrb_bus_q.done),
-
-         .scrb_dbg_state(ddrb_scrb_bus_q.state),
-         .scrb_dbg_addr (ddrb_scrb_bus_q.addr)
-      );
       assign lcl_cl_sh_ddrb.awid[15:9] = 7'b0;
       assign lcl_cl_sh_ddrb.wid[15:9] = 7'b0;
       assign lcl_cl_sh_ddrb.arid[15:9] = 7'b0;
@@ -1372,165 +923,47 @@ lib_pipe #(.WIDTH(1), .STAGES(4)) SLR2_PIPE_RST_N (.clk(aclk), .rst_n(1'b1), .in
        .s_axi_rlast    (lcl_cl_sh_ddrd_q2.rlast),
        .s_axi_rvalid   (lcl_cl_sh_ddrd_q2.rvalid),
        .s_axi_rready   (lcl_cl_sh_ddrd_q2.rready),
-       .m_axi_awid     (lcl_cl_sh_ddrd_q3.awid),
-       .m_axi_awaddr   (lcl_cl_sh_ddrd_q3.awaddr),
-       .m_axi_awlen    (lcl_cl_sh_ddrd_q3.awlen),
-       .m_axi_awsize   (lcl_cl_sh_ddrd_q3.awsize),
+       .m_axi_awid     (lcl_cl_sh_ddrd.awid),
+       .m_axi_awaddr   (lcl_cl_sh_ddrd.awaddr),
+       .m_axi_awlen    (lcl_cl_sh_ddrd.awlen),
+       .m_axi_awsize   (lcl_cl_sh_ddrd.awsize),
        .m_axi_awburst  (),
        .m_axi_awlock   (),
        .m_axi_awcache  (),
        .m_axi_awprot   (),
        .m_axi_awregion (),
        .m_axi_awqos    (),
-       .m_axi_awvalid  (lcl_cl_sh_ddrd_q3.awvalid),
-       .m_axi_awready  (lcl_cl_sh_ddrd_q3.awready),
-       .m_axi_wdata    (lcl_cl_sh_ddrd_q3.wdata),
-       .m_axi_wstrb    (lcl_cl_sh_ddrd_q3.wstrb),
-       .m_axi_wlast    (lcl_cl_sh_ddrd_q3.wlast),
-       .m_axi_wvalid   (lcl_cl_sh_ddrd_q3.wvalid),
-       .m_axi_wready   (lcl_cl_sh_ddrd_q3.wready),
-       .m_axi_bid      (lcl_cl_sh_ddrd_q3.bid),
-       .m_axi_bresp    (lcl_cl_sh_ddrd_q3.bresp),
-       .m_axi_bvalid   (lcl_cl_sh_ddrd_q3.bvalid),
-       .m_axi_bready   (lcl_cl_sh_ddrd_q3.bready),
-       .m_axi_arid     (lcl_cl_sh_ddrd_q3.arid),
-       .m_axi_araddr   (lcl_cl_sh_ddrd_q3.araddr),
-       .m_axi_arlen    (lcl_cl_sh_ddrd_q3.arlen),
-       .m_axi_arsize   (lcl_cl_sh_ddrd_q3.arsize),
+       .m_axi_awvalid  (lcl_cl_sh_ddrd.awvalid),
+       .m_axi_awready  (lcl_cl_sh_ddrd.awready),
+       .m_axi_wdata    (lcl_cl_sh_ddrd.wdata),
+       .m_axi_wstrb    (lcl_cl_sh_ddrd.wstrb),
+       .m_axi_wlast    (lcl_cl_sh_ddrd.wlast),
+       .m_axi_wvalid   (lcl_cl_sh_ddrd.wvalid),
+       .m_axi_wready   (lcl_cl_sh_ddrd.wready),
+       .m_axi_bid      (lcl_cl_sh_ddrd.bid),
+       .m_axi_bresp    (lcl_cl_sh_ddrd.bresp),
+       .m_axi_bvalid   (lcl_cl_sh_ddrd.bvalid),
+       .m_axi_bready   (lcl_cl_sh_ddrd.bready),
+       .m_axi_arid     (lcl_cl_sh_ddrd.arid),
+       .m_axi_araddr   (lcl_cl_sh_ddrd.araddr),
+       .m_axi_arlen    (lcl_cl_sh_ddrd.arlen),
+       .m_axi_arsize   (lcl_cl_sh_ddrd.arsize),
        .m_axi_arburst  (),
        .m_axi_arlock   (),
        .m_axi_arcache  (),
        .m_axi_arprot   (),
        .m_axi_arregion (),
        .m_axi_arqos    (),
-       .m_axi_arvalid  (lcl_cl_sh_ddrd_q3.arvalid),
-       .m_axi_arready  (lcl_cl_sh_ddrd_q3.arready),
-       .m_axi_rid      (lcl_cl_sh_ddrd_q3.rid),
-       .m_axi_rdata    (lcl_cl_sh_ddrd_q3.rdata),
-       .m_axi_rresp    (lcl_cl_sh_ddrd_q3.rresp),
-       .m_axi_rlast    (lcl_cl_sh_ddrd_q3.rlast),
-       .m_axi_rvalid   (lcl_cl_sh_ddrd_q3.rvalid),
-       .m_axi_rready   (lcl_cl_sh_ddrd_q3.rready)
+       .m_axi_arvalid  (lcl_cl_sh_ddrd.arvalid),
+       .m_axi_arready  (lcl_cl_sh_ddrd.arready),
+       .m_axi_rid      (lcl_cl_sh_ddrd.rid),
+       .m_axi_rdata    (lcl_cl_sh_ddrd.rdata),
+       .m_axi_rresp    (lcl_cl_sh_ddrd.rresp),
+       .m_axi_rlast    (lcl_cl_sh_ddrd.rlast),
+       .m_axi_rvalid   (lcl_cl_sh_ddrd.rvalid),
+       .m_axi_rready   (lcl_cl_sh_ddrd.rready)
        );
 
-//----------------------------
-// ATG/scrubber for DDRD
-//----------------------------
-   lib_pipe #(.WIDTH(32+32+1+1), .STAGES(NUM_CFG_STGS_CL_DDR_ATG)) PIPE_CFG_REQ_DDR_D (.clk (aclk),
-                                                              .rst_n (aresetn),
-                                                              .in_bus({ddrd_tst_cfg_bus.addr, ddrd_tst_cfg_bus.wdata, ddrd_tst_cfg_bus.wr, ddrd_tst_cfg_bus.rd}),
-                                                              .out_bus({ddrd_tst_cfg_bus_q.addr, ddrd_tst_cfg_bus_q.wdata, ddrd_tst_cfg_bus_q.wr, ddrd_tst_cfg_bus_q.rd})
-                                                              );
-
-   lib_pipe #(.WIDTH(32+1), .STAGES(NUM_CFG_STGS_CL_DDR_ATG)) PIPE_CFG_ACK_DDR_D (.clk (aclk),
-                                                              .rst_n (aresetn),
-                                                              .in_bus({ddrd_tst_cfg_bus_q.ack, ddrd_tst_cfg_bus_q.rdata}),
-                                                              .out_bus({ddrd_tst_cfg_bus.ack, ddrd_tst_cfg_bus.rdata})
-                                                              );
-
-
-   lib_pipe #(.WIDTH(2+3+64), .STAGES(NUM_CFG_STGS_CL_DDR_ATG)) PIPE_SCRB_DDR_D (.clk(aclk),
-                                                              .rst_n(aresetn),
-                                                              .in_bus({ddrd_scrb_bus.enable, ddrd_scrb_bus_q.done, ddrd_scrb_bus_q.state, ddrd_scrb_bus_q.addr}),
-                                                              .out_bus({ddrd_scrb_bus_q.enable, ddrd_scrb_bus.done, ddrd_scrb_bus.state, ddrd_scrb_bus.addr})
-                                                              );
-
-   cl_tst_scrb #(.DATA_WIDTH(512),
-                    .SCRB_BURST_LEN_MINUS1(SCRB_BURST_LEN_MINUS1),
-                    .SCRB_MAX_ADDR(SCRB_MAX_ADDR),
-                    .NO_SCRB_INST(NO_SCRB_INST)) CL_TST_DDR_D (
-
-         .clk(aclk),
-         .rst_n(slr0_sync_aresetn),
-
-         .cfg_addr(ddrd_tst_cfg_bus_q.addr),
-         .cfg_wdata(ddrd_tst_cfg_bus_q.wdata),
-         .cfg_wr(ddrd_tst_cfg_bus_q.wr),
-         .cfg_rd(ddrd_tst_cfg_bus_q.rd),
-         .tst_cfg_ack(ddrd_tst_cfg_bus_q.ack),
-         .tst_cfg_rdata(ddrd_tst_cfg_bus_q.rdata),
-
-         .slv_awid(lcl_cl_sh_ddrd_q3.awid[6:0]),
-         .slv_awaddr(lcl_cl_sh_ddrd_q3.awaddr),
-         .slv_awlen(lcl_cl_sh_ddrd_q3.awlen),
-         .slv_awsize(lcl_cl_sh_ddrd_q3.awsize),
-         .slv_awvalid(lcl_cl_sh_ddrd_q3.awvalid),
-         .slv_awuser(11'b0),
-         .slv_awready(lcl_cl_sh_ddrd_q3.awready),
-
-         .slv_wid(7'b0),
-         .slv_wdata(lcl_cl_sh_ddrd_q3.wdata),
-         .slv_wstrb(lcl_cl_sh_ddrd_q3.wstrb),
-         .slv_wlast(lcl_cl_sh_ddrd_q3.wlast),
-         .slv_wvalid(lcl_cl_sh_ddrd_q3.wvalid),
-         .slv_wready(lcl_cl_sh_ddrd_q3.wready),
-
-         .slv_bid(lcl_cl_sh_ddrd_q3.bid[6:0]),
-         .slv_bresp(lcl_cl_sh_ddrd_q3.bresp),
-         .slv_buser(),
-         .slv_bvalid(lcl_cl_sh_ddrd_q3.bvalid),
-         .slv_bready(lcl_cl_sh_ddrd_q3.bready),
-
-         .slv_arid(lcl_cl_sh_ddrd_q3.arid[6:0]),
-         .slv_araddr(lcl_cl_sh_ddrd_q3.araddr),
-         .slv_arlen(lcl_cl_sh_ddrd_q3.arlen),
-         .slv_arsize(lcl_cl_sh_ddrd_q3.arsize),
-         .slv_arvalid(lcl_cl_sh_ddrd_q3.arvalid),
-         .slv_aruser(11'b0),
-         .slv_arready(lcl_cl_sh_ddrd_q3.arready),
-
-         .slv_rid(lcl_cl_sh_ddrd_q3.rid[6:0]),
-         .slv_rdata(lcl_cl_sh_ddrd_q3.rdata),
-         .slv_rresp(lcl_cl_sh_ddrd_q3.rresp),
-         .slv_rlast(lcl_cl_sh_ddrd_q3.rlast),
-         .slv_ruser(),
-         .slv_rvalid(lcl_cl_sh_ddrd_q3.rvalid),
-         .slv_rready(lcl_cl_sh_ddrd_q3.rready),
-
-
-         .awid(lcl_cl_sh_ddrd.awid[8:0]),
-         .awaddr(lcl_cl_sh_ddrd.awaddr),
-         .awlen(lcl_cl_sh_ddrd.awlen),
-         .awvalid(lcl_cl_sh_ddrd.awvalid),
-         .awsize(lcl_cl_sh_ddrd.awsize),
-         .awuser(),
-         .awready(lcl_cl_sh_ddrd.awready),
-
-         .wid(lcl_cl_sh_ddrd.wid[8:0]),
-         .wdata(lcl_cl_sh_ddrd.wdata),
-         .wstrb(lcl_cl_sh_ddrd.wstrb),
-         .wlast(lcl_cl_sh_ddrd.wlast),
-         .wvalid(lcl_cl_sh_ddrd.wvalid),
-         .wready(lcl_cl_sh_ddrd.wready),
-
-         .bid(lcl_cl_sh_ddrd.bid[8:0]),
-         .bresp(lcl_cl_sh_ddrd.bresp),
-         .buser(18'h0),
-         .bvalid(lcl_cl_sh_ddrd.bvalid),
-         .bready(lcl_cl_sh_ddrd.bready),
-
-         .arid(lcl_cl_sh_ddrd.arid[8:0]),
-         .araddr(lcl_cl_sh_ddrd.araddr),
-         .arlen(lcl_cl_sh_ddrd.arlen),
-         .arsize(lcl_cl_sh_ddrd.arsize),
-         .arvalid(lcl_cl_sh_ddrd.arvalid),
-         .aruser(),
-         .arready(lcl_cl_sh_ddrd.arready),
-
-         .rid(lcl_cl_sh_ddrd.rid[8:0]),
-         .rdata(lcl_cl_sh_ddrd.rdata),
-         .rresp(lcl_cl_sh_ddrd.rresp),
-         .rlast(lcl_cl_sh_ddrd.rlast),
-         .ruser(18'h0),
-         .rvalid(lcl_cl_sh_ddrd.rvalid),
-         .rready(lcl_cl_sh_ddrd.rready),
-
-         .scrb_enable(ddrd_scrb_bus_q.enable),
-         .scrb_done  (ddrd_scrb_bus_q.done),
-
-         .scrb_dbg_state(ddrd_scrb_bus_q.state),
-         .scrb_dbg_addr (ddrd_scrb_bus_q.addr)
-      );
       assign lcl_cl_sh_ddrd.awid[15:9] = 7'b0;
       assign lcl_cl_sh_ddrd.wid[15:9] = 7'b0;
       assign lcl_cl_sh_ddrd.arid[15:9] = 7'b0;

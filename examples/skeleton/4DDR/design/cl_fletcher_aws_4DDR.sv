@@ -15,6 +15,8 @@
 
 
 `define FLETCHER_TOP AxiTop
+`define DDR_A_ABSENT True
+`define DDR_D_ABSENT True
 //`define NO_CL_TST_SCRUBBER 1 //unfortunately, this doesn't work
 
 module cl_fletcher_aws_4DDR #(parameter NUM_DDR=4) 
@@ -33,32 +35,12 @@ module cl_fletcher_aws_4DDR #(parameter NUM_DDR=4)
 // developers to remve the specific interfaces
 // that the CL will use
 
+`include "unused_flr_template.inc"
+`include "unused_pcim_template.inc"
+`include "unused_apppf_irq_template.inc"
 `include "unused_cl_sda_template.inc"
+`include "unused_sh_ocl_template.inc"
 
-// Define the addition pipeline stag
-// needed to close timing for the various
-// place where ATG (Automatic Test Generator)
-// is defined
-   
-   localparam NUM_CFG_STGS_CL_DDR_ATG = 8;
-   localparam NUM_CFG_STGS_SH_DDR_ATG = 4;
-   localparam NUM_CFG_STGS_PCIE_ATG = 4;
-
-// To reduce RTL simulation time, only 8KiB of
-// each external DRAM is scrubbed in simulations
-
-`ifdef SIM
-   localparam DDR_SCRB_MAX_ADDR = 64'h1FFF;
-`else   
-   localparam DDR_SCRB_MAX_ADDR = 64'h3FFFFFFFF; //16GB 
-`endif
-   localparam DDR_SCRB_BURST_LEN_MINUS1 = 15;
-
-`ifdef NO_CL_TST_SCRUBBER
-   localparam NO_SCRB_INST = 1;
-`else
-   localparam NO_SCRB_INST = 0;
-`endif   
 
 //---------------------------- 
 // Internal signals
@@ -71,27 +53,11 @@ axi_bus_t axi_bus_tied();
 axi_bus_t sh_cl_dma_pcis_bus();
 axi_bus_t sh_cl_dma_pcis_q();
 
-axi_bus_t sh_ocl_bus();
 axi_bus_t sh_bar1_bus();
 axi_bus_t cl_axi_slv_bus();
 axi_bus_t cl_axi_mstr_bus();
 
-axi_bus_t cl_sh_pcim_bus();
 axi_bus_t cl_sh_ddr_bus();
-
-cfg_bus_t pcim_tst_cfg_bus();
-cfg_bus_t ddra_tst_cfg_bus();
-cfg_bus_t ddrb_tst_cfg_bus();
-cfg_bus_t ddrc_tst_cfg_bus();
-cfg_bus_t ddrd_tst_cfg_bus();
-cfg_bus_t axi_mstr_cfg_bus();
-cfg_bus_t int_tst_cfg_bus();
-
-scrb_bus_t ddra_scrb_bus();
-scrb_bus_t ddrb_scrb_bus();
-scrb_bus_t ddrc_scrb_bus();
-scrb_bus_t ddrd_scrb_bus();
-
 
 logic clk;
 (* dont_touch = "true" *) logic pipe_rst_n;
@@ -99,7 +65,6 @@ logic pre_sync_rst_n;
 (* dont_touch = "true" *) logic sync_rst_n;
 logic sh_cl_flr_assert_q;
 
-logic [3:0] all_ddr_scrb_done;
 logic [3:0] all_ddr_is_ready;
 logic [2:0] lcl_sh_cl_ddr_is_ready;
 
@@ -121,6 +86,9 @@ assign cl_sh_ddr_awburst[1:0] = 2'h0;
 
 assign clk = clk_main_a0;
 
+assign cl_sh_id0 = `CL_SH_ID0;
+assign cl_sh_id1 = `CL_SH_ID1;
+
 //reset synchronizer
 lib_pipe #(.WIDTH(1), .STAGES(4)) PIPE_RST_N (.clk(clk), .rst_n(1'b1), .in_bus(rst_main_n), .out_bus(pipe_rst_n));
    
@@ -136,60 +104,9 @@ always_ff @(negedge pipe_rst_n or posedge clk)
       sync_rst_n <= pre_sync_rst_n;
    end
 
-//FLR response 
-always_ff @(negedge sync_rst_n or posedge clk)
-   if (!sync_rst_n)
-   begin
-      sh_cl_flr_assert_q <= 0;
-      cl_sh_flr_done <= 0;
-   end
-   else
-   begin
-      sh_cl_flr_assert_q <= sh_cl_flr_assert;
-      cl_sh_flr_done <= sh_cl_flr_assert_q && !cl_sh_flr_done;
-   end
-
-///////////////////////////////////////////////////////////////////////
-///////////////// Scrubber enable and status //////////////////////////
-///////////////////////////////////////////////////////////////////////
-
-// Bit 31: Debug enable (for cl_sh_id0 and cl_sh_id1)
-// Bit 30:28: Debug Scrb memory select
-   
-// Bit 3 : DDRC Scrub enable
-// Bit 2 : DDRD Scrub enable
-// Bit 1 : DDRB Scrub enable
-// Bit 0 : DDRA Scrub enable
-logic [31:0] sh_cl_ctl0_q;
-always_ff @(posedge clk or negedge sync_rst_n)
-  if (!sync_rst_n)
-    sh_cl_ctl0_q <= 32'd0;
-  else
-    sh_cl_ctl0_q <= sh_cl_ctl0;
-
-assign ddra_scrb_bus.enable = sh_cl_ctl0_q[0];
-assign ddrb_scrb_bus.enable = sh_cl_ctl0_q[1];
-assign ddrd_scrb_bus.enable = sh_cl_ctl0_q[2];
-assign ddrc_scrb_bus.enable = sh_cl_ctl0_q[3];
-
-
-assign dbg_scrb_en = sh_cl_ctl0_q[31];
-assign dbg_scrb_mem_sel[2:0] = sh_cl_ctl0_q[30:28];
-
 // The functionality for these signals is TBD so they can can be tied-off.
 assign cl_sh_status0 = 32'h0;
 assign cl_sh_status1 = 32'h0;
-
-always_ff @(posedge clk)
-    cl_sh_id0 <= dbg_scrb_en ? (dbg_scrb_mem_sel == 3'd3 ? ddrc_scrb_bus.addr[31:0] :
-                                dbg_scrb_mem_sel == 3'd2 ? ddrd_scrb_bus.addr[31:0] :
-                                dbg_scrb_mem_sel == 3'd1 ? ddrb_scrb_bus.addr[31:0] : ddra_scrb_bus.addr[31:0]) :
-                                `CL_SH_ID0; 
-always_ff @(posedge clk)
-    cl_sh_id1 <= dbg_scrb_en ? (dbg_scrb_mem_sel == 3'd3 ? ddrc_scrb_bus.addr[63:32] :
-                                dbg_scrb_mem_sel == 3'd2 ? ddrd_scrb_bus.addr[63:32] :
-                                dbg_scrb_mem_sel == 3'd1 ? ddrb_scrb_bus.addr[63:32] : ddra_scrb_bus.addr[63:32]) :
-                                `CL_SH_ID1;
 
 logic sh_cl_ddr_is_ready_q;
 always_ff @(posedge clk or negedge sync_rst_n)
@@ -203,13 +120,6 @@ always_ff @(posedge clk or negedge sync_rst_n)
   end  
 
 assign all_ddr_is_ready = {lcl_sh_cl_ddr_is_ready[2], sh_cl_ddr_is_ready_q, lcl_sh_cl_ddr_is_ready[1:0]};
-
-assign all_ddr_scrb_done = {ddrc_scrb_bus.done, ddrd_scrb_bus.done, ddrb_scrb_bus.done, ddra_scrb_bus.done};
-
-
-///////////////////////////////////////////////////////////////////////
-///////////////// Scrubber enable and status //////////////////////////
-///////////////////////////////////////////////////////////////////////
 
 
 ///////////////////////////////////////////////////////////////////////
@@ -275,21 +185,9 @@ assign cl_sh_ddr_rready = cl_sh_ddr_bus.rready;
 
 (* dont_touch = "true" *) logic dma_pcis_slv_sync_rst_n;
 lib_pipe #(.WIDTH(1), .STAGES(4)) DMA_PCIS_SLV_SLC_RST_N (.clk(clk), .rst_n(1'b1), .in_bus(sync_rst_n), .out_bus(dma_pcis_slv_sync_rst_n));
-cl_dma_pcis_slv #(.SCRB_BURST_LEN_MINUS1(DDR_SCRB_BURST_LEN_MINUS1),
-                    .SCRB_MAX_ADDR(DDR_SCRB_MAX_ADDR),
-                    .NO_SCRB_INST(NO_SCRB_INST)) CL_DMA_PCIS_SLV (
+cl_dma_pcis_slv #() CL_DMA_PCIS_SLV (
     .aclk(clk),
     .aresetn(dma_pcis_slv_sync_rst_n),
-
-    .ddra_tst_cfg_bus(ddra_tst_cfg_bus),
-    .ddrb_tst_cfg_bus(ddrb_tst_cfg_bus),
-    .ddrc_tst_cfg_bus(ddrc_tst_cfg_bus),
-    .ddrd_tst_cfg_bus(ddrd_tst_cfg_bus),
-
-    .ddra_scrb_bus(ddra_scrb_bus),
-    .ddrb_scrb_bus(ddrb_scrb_bus),
-    .ddrc_scrb_bus(ddrc_scrb_bus),
-    .ddrd_scrb_bus(ddrd_scrb_bus),
 
     .sh_cl_dma_pcis_bus(sh_cl_dma_pcis_bus),
     .cl_axi_mstr_bus(cl_axi_mstr_bus),
@@ -391,10 +289,6 @@ axi_register_slice_light BAR1_SLICE (
   .m_axi_rready  (cl_axi_slv_bus.rready )
 );
 
-//JH: Tie off the cfg bus for the AXI master module (which we have removed to connect our AxiTop to the AXI interconnect)
-assign axi_mstr_cfg_bus.ack = 1'b0;
-assign axi_mstr_cfg_bus.rdata = 32'b0 ;
-
 `FLETCHER_TOP #() FLETCHER_TOP_INST (
    .kcd_clk(clk),
    .bcd_clk(clk),
@@ -454,100 +348,6 @@ assign cl_axi_mstr_bus.bready = 1'b1;
 ///////////////// Secondary AXI Master module /////////////////////////
 ///////////////////////////////////////////////////////////////////////
 
-///////////////////////////////////////////////////////////////////////
-///////////////// PCIM MSTR module ////////////////////////////////////
-///////////////////////////////////////////////////////////////////////
-
-assign cl_sh_pcim_awid = cl_sh_pcim_bus.awid;
-assign cl_sh_pcim_awaddr = cl_sh_pcim_bus.awaddr;
-assign cl_sh_pcim_awlen = cl_sh_pcim_bus.awlen;
-assign cl_sh_pcim_awvalid = cl_sh_pcim_bus.awvalid;
-assign cl_sh_pcim_awsize = cl_sh_pcim_bus.awsize;
-assign cl_sh_pcim_bus.awready = sh_cl_pcim_awready;
-assign cl_sh_pcim_wdata = cl_sh_pcim_bus.wdata;
-assign cl_sh_pcim_wstrb = cl_sh_pcim_bus.wstrb;
-assign cl_sh_pcim_wlast = cl_sh_pcim_bus.wlast;
-assign cl_sh_pcim_wvalid = cl_sh_pcim_bus.wvalid;
-assign cl_sh_pcim_bus.wready = sh_cl_pcim_wready;
-assign cl_sh_pcim_bus.bid = sh_cl_pcim_bid;
-assign cl_sh_pcim_bus.bresp = sh_cl_pcim_bresp;
-assign cl_sh_pcim_bus.bvalid = sh_cl_pcim_bvalid;
-assign cl_sh_pcim_bready = cl_sh_pcim_bus.bready;
-assign cl_sh_pcim_arid = cl_sh_pcim_bus.arid;
-assign cl_sh_pcim_araddr = cl_sh_pcim_bus.araddr;
-assign cl_sh_pcim_arlen = cl_sh_pcim_bus.arlen;
-assign cl_sh_pcim_arvalid = cl_sh_pcim_bus.arvalid;
-assign cl_sh_pcim_bus.arready = sh_cl_pcim_arready;
-assign cl_sh_pcim_arsize = cl_sh_pcim_bus.arsize;
-assign cl_sh_pcim_bus.rid = sh_cl_pcim_rid;
-assign cl_sh_pcim_bus.rresp = sh_cl_pcim_rresp;
-assign cl_sh_pcim_bus.rvalid = sh_cl_pcim_rvalid;
-assign cl_sh_pcim_bus.rdata = sh_cl_pcim_rdata;
-assign cl_sh_pcim_bus.rlast = sh_cl_pcim_rlast;
-assign cl_sh_pcim_rready = cl_sh_pcim_bus.rready;
-
-// note: cl_sh_pcim_aruser/awuser are ignored by the shell
-// and the axi4 size is set fixed for 64-bytes
-//  cl_sh_pcim_arsize/awsize = 3'b6;
-
-(* dont_touch = "true" *) logic pcim_mstr_sync_rst_n;
-lib_pipe #(.WIDTH(1), .STAGES(4)) PCIM_MSTR_SLC_RST_N (.clk(clk), .rst_n(1'b1), .in_bus(sync_rst_n), .out_bus(pcim_mstr_sync_rst_n));
-cl_pcim_mstr CL_PCIM_MSTR (
-
-     .aclk(clk),
-     .aresetn(pcim_mstr_sync_rst_n),
-
-     .cfg_bus(pcim_tst_cfg_bus),
-
-     .cl_sh_pcim_bus     (cl_sh_pcim_bus)
-);
-
-///////////////////////////////////////////////////////////////////////
-///////////////// OCL SLAVE module ////////////////////////////////////
-///////////////////////////////////////////////////////////////////////
-
-assign sh_ocl_bus.awvalid = sh_ocl_awvalid;
-assign sh_ocl_bus.awaddr[31:0] = sh_ocl_awaddr;
-assign ocl_sh_awready = sh_ocl_bus.awready;
-assign sh_ocl_bus.wvalid = sh_ocl_wvalid;
-assign sh_ocl_bus.wdata[31:0] = sh_ocl_wdata;
-assign sh_ocl_bus.wstrb[3:0] = sh_ocl_wstrb;
-assign ocl_sh_wready = sh_ocl_bus.wready;
-assign ocl_sh_bvalid = sh_ocl_bus.bvalid;
-assign ocl_sh_bresp = sh_ocl_bus.bresp;
-assign sh_ocl_bus.bready = sh_ocl_bready;
-assign sh_ocl_bus.arvalid = sh_ocl_arvalid;
-assign sh_ocl_bus.araddr[31:0] = sh_ocl_araddr;
-assign ocl_sh_arready = sh_ocl_bus.arready;
-assign ocl_sh_rvalid = sh_ocl_bus.rvalid;
-assign ocl_sh_rresp = sh_ocl_bus.rresp;
-assign ocl_sh_rdata = sh_ocl_bus.rdata[31:0];
-assign sh_ocl_bus.rready = sh_ocl_rready;
-
-(* dont_touch = "true" *) logic ocl_slv_sync_rst_n;
-lib_pipe #(.WIDTH(1), .STAGES(4)) OCL_SLV_SLC_RST_N (.clk(clk), .rst_n(1'b1), .in_bus(sync_rst_n), .out_bus(ocl_slv_sync_rst_n));
-cl_ocl_slv CL_OCL_SLV (
-
-   .clk(clk),
-   .sync_rst_n(ocl_slv_sync_rst_n),
-
-   .sh_cl_flr_assert_q(sh_cl_flr_assert_q),
-
-   .sh_ocl_bus  (sh_ocl_bus),
-
-   .pcim_tst_cfg_bus(pcim_tst_cfg_bus),
-   .ddra_tst_cfg_bus(ddra_tst_cfg_bus),
-   .ddrb_tst_cfg_bus(ddrb_tst_cfg_bus),
-   .ddrc_tst_cfg_bus(ddrc_tst_cfg_bus),
-   .ddrd_tst_cfg_bus(ddrd_tst_cfg_bus),
-   .axi_mstr_cfg_bus(axi_mstr_cfg_bus),
-   .int_tst_cfg_bus(int_tst_cfg_bus)
-
-);
-
-///////////////////////////////////////////////////////////////////////
-///////////////// OCL SLAVE module ////////////////////////////////////
-///////////////////////////////////////////////////////////////////////
 
 //----------------------------------------- 
 // DDR controller instantiation   
@@ -556,44 +356,6 @@ logic [7:0] sh_ddr_stat_addr_q[2:0];
 logic[2:0] sh_ddr_stat_wr_q;
 logic[2:0] sh_ddr_stat_rd_q; 
 logic[31:0] sh_ddr_stat_wdata_q[2:0];
-logic[2:0] ddr_sh_stat_ack_q;
-logic[31:0] ddr_sh_stat_rdata_q[2:0];
-logic[7:0] ddr_sh_stat_int_q[2:0];
-
-
-lib_pipe #(.WIDTH(1+1+8+32), .STAGES(NUM_CFG_STGS_CL_DDR_ATG)) PIPE_DDR_STAT0 (.clk(clk), .rst_n(sync_rst_n),
-                                               .in_bus({sh_ddr_stat_wr0, sh_ddr_stat_rd0, sh_ddr_stat_addr0, sh_ddr_stat_wdata0}),
-                                               .out_bus({sh_ddr_stat_wr_q[0], sh_ddr_stat_rd_q[0], sh_ddr_stat_addr_q[0], sh_ddr_stat_wdata_q[0]})
-                                               );
-
-
-lib_pipe #(.WIDTH(1+8+32), .STAGES(NUM_CFG_STGS_CL_DDR_ATG)) PIPE_DDR_STAT_ACK0 (.clk(clk), .rst_n(sync_rst_n),
-                                               .in_bus({ddr_sh_stat_ack_q[0], ddr_sh_stat_int_q[0], ddr_sh_stat_rdata_q[0]}),
-                                               .out_bus({ddr_sh_stat_ack0, ddr_sh_stat_int0, ddr_sh_stat_rdata0})
-                                               );
-
-
-lib_pipe #(.WIDTH(1+1+8+32), .STAGES(NUM_CFG_STGS_CL_DDR_ATG)) PIPE_DDR_STAT1 (.clk(clk), .rst_n(sync_rst_n),
-                                               .in_bus({sh_ddr_stat_wr1, sh_ddr_stat_rd1, sh_ddr_stat_addr1, sh_ddr_stat_wdata1}),
-                                               .out_bus({sh_ddr_stat_wr_q[1], sh_ddr_stat_rd_q[1], sh_ddr_stat_addr_q[1], sh_ddr_stat_wdata_q[1]})
-                                               );
-
-
-lib_pipe #(.WIDTH(1+8+32), .STAGES(NUM_CFG_STGS_CL_DDR_ATG)) PIPE_DDR_STAT_ACK1 (.clk(clk), .rst_n(sync_rst_n),
-                                               .in_bus({ddr_sh_stat_ack_q[1], ddr_sh_stat_int_q[1], ddr_sh_stat_rdata_q[1]}),
-                                               .out_bus({ddr_sh_stat_ack1, ddr_sh_stat_int1, ddr_sh_stat_rdata1})
-                                               );
-
-lib_pipe #(.WIDTH(1+1+8+32), .STAGES(NUM_CFG_STGS_CL_DDR_ATG)) PIPE_DDR_STAT2 (.clk(clk), .rst_n(sync_rst_n),
-                                               .in_bus({sh_ddr_stat_wr2, sh_ddr_stat_rd2, sh_ddr_stat_addr2, sh_ddr_stat_wdata2}),
-                                               .out_bus({sh_ddr_stat_wr_q[2], sh_ddr_stat_rd_q[2], sh_ddr_stat_addr_q[2], sh_ddr_stat_wdata_q[2]})
-                                               );
-
-
-lib_pipe #(.WIDTH(1+8+32), .STAGES(NUM_CFG_STGS_CL_DDR_ATG)) PIPE_DDR_STAT_ACK2 (.clk(clk), .rst_n(sync_rst_n),
-                                               .in_bus({ddr_sh_stat_ack_q[2], ddr_sh_stat_int_q[2], ddr_sh_stat_rdata_q[2]}),
-                                               .out_bus({ddr_sh_stat_ack2, ddr_sh_stat_int2, ddr_sh_stat_rdata2})
-                                               ); 
 
 //convert to 2D 
 logic[15:0] cl_sh_ddr_awid_2d[2:0];
@@ -780,52 +542,43 @@ sh_ddr #(
    .sh_ddr_stat_wr0    (sh_ddr_stat_wr_q[0]     ) , 
    .sh_ddr_stat_rd0    (sh_ddr_stat_rd_q[0]     ) , 
    .sh_ddr_stat_wdata0 (sh_ddr_stat_wdata_q[0]  ) , 
-   .ddr_sh_stat_ack0   (ddr_sh_stat_ack_q[0]    ) ,
-   .ddr_sh_stat_rdata0 (ddr_sh_stat_rdata_q[0]  ),
-   .ddr_sh_stat_int0   (ddr_sh_stat_int_q[0]    ),
+   .ddr_sh_stat_ack0   () ,
+   .ddr_sh_stat_rdata0 (),
+   .ddr_sh_stat_int0   (),
 
    .sh_ddr_stat_addr1  (sh_ddr_stat_addr_q[1]) ,
    .sh_ddr_stat_wr1    (sh_ddr_stat_wr_q[1]     ) , 
    .sh_ddr_stat_rd1    (sh_ddr_stat_rd_q[1]     ) , 
    .sh_ddr_stat_wdata1 (sh_ddr_stat_wdata_q[1]  ) , 
-   .ddr_sh_stat_ack1   (ddr_sh_stat_ack_q[1]    ) ,
-   .ddr_sh_stat_rdata1 (ddr_sh_stat_rdata_q[1]  ),
-   .ddr_sh_stat_int1   (ddr_sh_stat_int_q[1]    ),
+   .ddr_sh_stat_ack1   () ,
+   .ddr_sh_stat_rdata1 (),
+   .ddr_sh_stat_int1   (),
 
    .sh_ddr_stat_addr2  (sh_ddr_stat_addr_q[2]) ,
    .sh_ddr_stat_wr2    (sh_ddr_stat_wr_q[2]     ) , 
    .sh_ddr_stat_rd2    (sh_ddr_stat_rd_q[2]     ) , 
    .sh_ddr_stat_wdata2 (sh_ddr_stat_wdata_q[2]  ) , 
-   .ddr_sh_stat_ack2   (ddr_sh_stat_ack_q[2]    ) ,
-   .ddr_sh_stat_rdata2 (ddr_sh_stat_rdata_q[2]  ),
-   .ddr_sh_stat_int2   (ddr_sh_stat_int_q[2]    ) 
+   .ddr_sh_stat_ack2   () ,
+   .ddr_sh_stat_rdata2 (),
+   .ddr_sh_stat_int2   () 
    );
+
+
+  assign ddr_sh_stat_ack0   =   1'b1; // Needed in order not to hang the interface
+  assign ddr_sh_stat_rdata0 =  32'b0;
+  assign ddr_sh_stat_int0   =   8'b0;
+
+  assign ddr_sh_stat_ack1   =   1'b1; // Needed in order not to hang the interface
+  assign ddr_sh_stat_rdata1 =  32'b0;
+  assign ddr_sh_stat_int1   =   8'b0;
+
+  assign ddr_sh_stat_ack2   =   1'b1; // Needed in order not to hang the interface
+  assign ddr_sh_stat_rdata2 =  32'b0;
+  assign ddr_sh_stat_int2   =   8'b0;
+
 
 //----------------------------------------- 
 // DDR controller instantiation   
-//-----------------------------------------
-
-
-//----------------------------------------- 
-// Interrrupt example  
-//-----------------------------------------
-
-(* dont_touch = "true" *) logic int_slv_sync_rst_n;
-lib_pipe #(.WIDTH(1), .STAGES(4)) INT_SLV_SLC_RST_N (.clk(clk), .rst_n(1'b1), .in_bus(sync_rst_n), .out_bus(int_slv_sync_rst_n));
-cl_int_slv CL_INT_TST 
-(
-  .clk                 (clk),
-  .rst_n               (int_slv_sync_rst_n),
-
-  .cfg_bus             (int_tst_cfg_bus),
-
-  .cl_sh_apppf_irq_req (cl_sh_apppf_irq_req),
-  .sh_cl_apppf_irq_ack (sh_cl_apppf_irq_ack)
-       
-);
-
-//----------------------------------------- 
-// Interrrupt example  
 //-----------------------------------------
 
 //----------------------------------------- 
@@ -896,12 +649,6 @@ cl_vio CL_VIO (
    assign axi_bus_tied.bvalid = 1'b0 ;
    assign axi_bus_tied.bid = 16'b0 ;
    assign axi_bus_tied.bready = 1'b0 ;
-
-
-// Temporal workaround until these signals removed from the shell
-
-     assign cl_sh_pcim_awuser = 18'h0;
-     assign cl_sh_pcim_aruser = 18'h0;
 
 
 endmodule   

@@ -81,12 +81,6 @@ int host_main(int argc, char **argv, bool simulating) {
     return -1;
   }
 
-  // Initialize the platform.
-  if (simulating) {
-    InitOptions options = {1}; //do not initialize DDR for the 1DDR version
-    platform->init_data = &options;
-  }
-
   status = platform->Init();
 
   if (!status.ok()) {
