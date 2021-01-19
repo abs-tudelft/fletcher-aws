@@ -39,7 +39,7 @@
 --include ${HDK_SHELL_DESIGN_DIR}/sh_ddr/sim
 
 #needs to be first, to define CL_NAME
-${CL_ROOT}/design/cl_dram_dma_defines.vh
+${CL_ROOT}/design/cl_fletcher_aws_defines.vh
 
 -f ${HDK_COMMON_DIR}/verif/tb/filelists/tb.${SIMULATOR}.f
 ${TEST_NAME}
@@ -84,9 +84,9 @@ ${HDK_SHELL_DESIGN_DIR}/sh_ddr/sim/sh_ddr.sv
 
 
 --define DISABLE_VJTAG_DEBUG
-${CL_ROOT}/design/cl_dram_dma_pkg.sv
+${CL_ROOT}/design/cl_fletcher_aws_pkg.sv
 ${CL_ROOT}/design/cl_dma_pcis_slv.sv
 ${CL_ROOT}/design/cl_ila.sv
 ${CL_ROOT}/design/cl_vio.sv
-${CL_ROOT}/design/cl_fletcher_aws_4DDR.sv
+${CL_ROOT}/design/cl_fletcher_aws.sv
 

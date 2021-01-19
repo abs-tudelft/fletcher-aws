@@ -37,10 +37,10 @@ if {[llength [glob -nocomplain -dir $TARGET_DIR *]] != 0} {
 
 #FLETCHER_AXITOP_VHDL_FILES
 
-file copy -force $CL_DIR/design/cl_dram_dma_defines.vh                                  $TARGET_DIR
+file copy -force $CL_DIR/design/cl_fletcher_aws_defines.vh                              $TARGET_DIR
 file copy -force $CL_DIR/design/cl_id_defines.vh                                        $TARGET_DIR
-file copy -force $CL_DIR/design/cl_dram_dma_pkg.sv                                      $TARGET_DIR
-file copy -force $CL_DIR/design/cl_fletcher_aws_4DDR.sv                                 $TARGET_DIR
+file copy -force $CL_DIR/design/cl_fletcher_aws_pkg.sv                                  $TARGET_DIR
+file copy -force $CL_DIR/design/cl_fletcher_aws.sv                                      $TARGET_DIR
 file copy -force $CL_DIR/design/cl_vio.sv                                               $TARGET_DIR
 file copy -force $CL_DIR/design/cl_dma_pcis_slv.sv                                      $TARGET_DIR
 file copy -force $CL_DIR/design/cl_ila.sv                                               $TARGET_DIR

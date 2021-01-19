@@ -13,8 +13,8 @@
 // implied. See the License for the specific language governing permissions and
 // limitations under the License.
 
-`ifndef CL_DRAM_DMA_PKG
-`define CL_DRAM_DMA_PKG
+`ifndef CL_FLETCHER_AWS_PKG
+`define CL_FLETCHER_AWS_PKG
  
    interface axi_bus_t;
       logic[15:0] awid;
@@ -88,4 +88,4 @@
       modport slave (output enable, input addr, state, done);
    endinterface
 
-`endif //CL_DRAM_DMA_PKG
+`endif //CL_FLETCHER_AWS_PKG

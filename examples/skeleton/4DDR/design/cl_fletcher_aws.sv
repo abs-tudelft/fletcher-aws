@@ -17,8 +17,9 @@
 `define FLETCHER_TOP AxiTop
 `define DDR_A_ABSENT True
 `define DDR_B_ABSENT True
+`define DDR_D_ABSENT True
 
-module cl_fletcher_aws_4DDR #() 
+module cl_fletcher_aws #() 
 
 (
    `include "cl_ports.vh"
@@ -26,7 +27,7 @@ module cl_fletcher_aws_4DDR #()
 );
 
 `include "cl_id_defines.vh"          // Defines for ID0 and ID1 (PCI ID's)
-`include "cl_dram_dma_defines.vh"
+`include "cl_fletcher_aws_defines.vh"
 
 // TIE OFF ALL UNUSED INTERFACES
 // Including all the unused interface to tie off

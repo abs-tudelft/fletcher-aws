@@ -19,7 +19,7 @@ package require tar
 set TOP top_sp
 
 ## Replace with the name of your module
-set CL_MODULE cl_fletcher_aws_4DDR
+set CL_MODULE cl_fletcher_aws
 
 #################################################
 ## Command-line Arguments

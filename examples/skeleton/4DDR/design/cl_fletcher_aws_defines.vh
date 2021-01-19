@@ -13,11 +13,11 @@
 // implied. See the License for the specific language governing permissions and
 // limitations under the License.
 
-`ifndef CL_DRAM_DMA_DEFINES
-`define CL_DRAM_DMA_DEFINES
+`ifndef CL_FLETCHER_AWS_DEFINES
+`define CL_FLETCHER_AWS_DEFINES
 
 //Put module name of the CL design here.  This is used to instantiate in top.sv
-`define CL_NAME cl_fletcher_aws_4DDR
+`define CL_NAME cl_fletcher_aws
 
 //Highly recommeneded.  For lib FIFO block, uses less async reset (take advantage of
 // FPGA flop init capability).  This will help with routing resources.
