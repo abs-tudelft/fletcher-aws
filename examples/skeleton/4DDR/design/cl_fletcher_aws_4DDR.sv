@@ -17,9 +17,8 @@
 `define FLETCHER_TOP AxiTop
 `define DDR_A_ABSENT True
 `define DDR_B_ABSENT True
-//`define NO_CL_TST_SCRUBBER 1 //unfortunately, this doesn't work
 
-module cl_fletcher_aws_4DDR #(parameter NUM_DDR=4) 
+module cl_fletcher_aws_4DDR #() 
 
 (
    `include "cl_ports.vh"
