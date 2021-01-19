@@ -382,7 +382,7 @@ lib_pipe #(.WIDTH(1), .STAGES(4)) SLR2_PIPE_RST_N (.clk(aclk), .rst_n(1'b1), .in
 //----------------------------
 // flop the output of interconnect for DDRC
 //----------------------------
-   axi_register_slice DDR_C_TST_AXI4_REG_SLC (
+   axi_register_slice DDR_C_AXI4_REG_SLC (
        .aclk           (aclk),
        .aresetn        (slr1_sync_aresetn),
 
@@ -448,7 +448,7 @@ lib_pipe #(.WIDTH(1), .STAGES(4)) SLR2_PIPE_RST_N (.clk(aclk), .rst_n(1'b1), .in
 // back to back for SLR crossing
 //----------------------------
    //back to back register slices for SLR crossing
-   src_register_slice DDR_A_TST_AXI4_REG_SLC_1 (
+   src_register_slice DDR_A_AXI4_REG_SLC_1 (
        .aclk           (aclk),
        .aresetn        (slr1_sync_aresetn),
        .s_axi_awid     (lcl_cl_sh_ddra_q.awid),
@@ -530,7 +530,7 @@ lib_pipe #(.WIDTH(1), .STAGES(4)) SLR2_PIPE_RST_N (.clk(aclk), .rst_n(1'b1), .in
        .m_axi_rvalid   (lcl_cl_sh_ddra_q2.rvalid),
        .m_axi_rready   (lcl_cl_sh_ddra_q2.rready)
        );
-   dest_register_slice DDR_A_TST_AXI4_REG_SLC_2 (
+   dest_register_slice DDR_A_AXI4_REG_SLC_2 (
        .aclk           (aclk),
        .aresetn        (slr2_sync_aresetn),
        .s_axi_awid     (lcl_cl_sh_ddra_q2.awid),
@@ -613,17 +613,13 @@ lib_pipe #(.WIDTH(1), .STAGES(4)) SLR2_PIPE_RST_N (.clk(aclk), .rst_n(1'b1), .in
        .m_axi_rready   (lcl_cl_sh_ddra.rready)
        );
 
-      assign lcl_cl_sh_ddra.awid[15:9] = 7'b0;
-      assign lcl_cl_sh_ddra.wid[15:9] = 7'b0;
-      assign lcl_cl_sh_ddra.arid[15:9] = 7'b0;
-
 //----------------------------
 // flop the output of interconnect for DDRB
 // back to back for SLR crossing
 //----------------------------
 
   //back to back register slices for SLR crossing
-   src_register_slice DDR_B_TST_AXI4_REG_SLC_1 (
+   src_register_slice DDR_B_AXI4_REG_SLC_1 (
        .aclk           (aclk),
        .aresetn        (slr1_sync_aresetn),
        .s_axi_awid     (lcl_cl_sh_ddrb_q.awid),
@@ -705,7 +701,7 @@ lib_pipe #(.WIDTH(1), .STAGES(4)) SLR2_PIPE_RST_N (.clk(aclk), .rst_n(1'b1), .in
        .m_axi_rvalid   (lcl_cl_sh_ddrb_q2.rvalid),
        .m_axi_rready   (lcl_cl_sh_ddrb_q2.rready)
        );
-   dest_register_slice DDR_B_TST_AXI4_REG_SLC_2 (
+   dest_register_slice DDR_B_AXI4_REG_SLC_2 (
        .aclk           (aclk),
        .aresetn        (slr1_sync_aresetn),
        .s_axi_awid     (lcl_cl_sh_ddrb_q2.awid),
@@ -788,18 +784,13 @@ lib_pipe #(.WIDTH(1), .STAGES(4)) SLR2_PIPE_RST_N (.clk(aclk), .rst_n(1'b1), .in
        .m_axi_rready   (lcl_cl_sh_ddrb.rready)
        );
 
-      assign lcl_cl_sh_ddrb.awid[15:9] = 7'b0;
-      assign lcl_cl_sh_ddrb.wid[15:9] = 7'b0;
-      assign lcl_cl_sh_ddrb.arid[15:9] = 7'b0;
-
-
 //----------------------------
 // flop the output of interconnect for DDRD
 // back to back for SLR crossing
 //----------------------------
 
   //back to back register slices for SLR crossing
-   src_register_slice DDR_D_TST_AXI4_REG_SLC_1 (
+   src_register_slice DDR_D_AXI4_REG_SLC_1 (
        .aclk           (aclk),
        .aresetn        (slr1_sync_aresetn),
        .s_axi_awid     (lcl_cl_sh_ddrd_q.awid),
@@ -881,7 +872,7 @@ lib_pipe #(.WIDTH(1), .STAGES(4)) SLR2_PIPE_RST_N (.clk(aclk), .rst_n(1'b1), .in
        .m_axi_rvalid   (lcl_cl_sh_ddrd_q2.rvalid),
        .m_axi_rready   (lcl_cl_sh_ddrd_q2.rready)
        );
-   dest_register_slice DDR_D_TST_AXI4_REG_SLC_2 (
+   dest_register_slice DDR_D_AXI4_REG_SLC_2 (
        .aclk           (aclk),
        .aresetn        (slr0_sync_aresetn),
        .s_axi_awid     (lcl_cl_sh_ddrd_q2.awid),
@@ -963,11 +954,6 @@ lib_pipe #(.WIDTH(1), .STAGES(4)) SLR2_PIPE_RST_N (.clk(aclk), .rst_n(1'b1), .in
        .m_axi_rvalid   (lcl_cl_sh_ddrd.rvalid),
        .m_axi_rready   (lcl_cl_sh_ddrd.rready)
        );
-
-      assign lcl_cl_sh_ddrd.awid[15:9] = 7'b0;
-      assign lcl_cl_sh_ddrd.wid[15:9] = 7'b0;
-      assign lcl_cl_sh_ddrd.arid[15:9] = 7'b0;
-
 
 endmodule
 
