@@ -22,6 +22,9 @@ endif
 ifndef FLETCHER_AWS_DIR
 $(error Environment variable FLETCHER_AWS_DIR not set. please source fletcher-aws sourceme.sh)
 endif
+ifndef FLETCHER_AWS_ARGV
+$(error Environment variable FLETCHER_AWS_ARGV not set. This is needed to pass commandline arguments to the test.)
+endif
 
 export TEST ?= test_null
 export C_TEST ?= test_null
@@ -101,8 +104,6 @@ export XILINX_IP   = $(HDK_SHELL_DESIGN_DIR)/ip
 export SH_LIB_DIR  = $(HDK_SHELL_DESIGN_DIR)/lib
 export SH_INF_DIR  = $(HDK_SHELL_DESIGN_DIR)/interfaces
 export SH_SH_DIR   = $(HDK_SHELL_DESIGN_DIR)/sh_ddr/sim
-
-SV_TEST_LIST = test_hello_world
 
 ifeq ($(XCHK), 1)
   all:	make_sim_dir compile_chk run
