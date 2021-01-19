@@ -25,9 +25,11 @@
 static const uint16_t AMZ_PCI_VENDOR_ID = 0x1D0F; /* Amazon PCI Vendor ID */
 static const uint16_t PCI_DEVICE_ID = 0xF001;
 
+#define MEM_16G              (1ULL << 34)
+
 // Dirty globals
 AwsConfig aws_default_config = {0, 0, 1}; // Slot 0, BAR1
-PlatformState aws_state = {{0, 0, 1}, 4096, {0}, {0},  0, 0, 0x0};
+PlatformState aws_state = {{0, 0, 1}, 4096, {0}, {0},  0, 0, 2 * MEM_16G}; // default to using DIMM C
 
 static fstatus_t check_ddr(const uint8_t *source, da_t offset, size_t size) {
   uint8_t *check_buffer = (uint8_t *) malloc(size);

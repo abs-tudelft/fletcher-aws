@@ -25,8 +25,10 @@
 #include <fpga_pci_sv.h>
 #include <utils/sh_dpi_tasks.h>
 
+#define MEM_16G              (1ULL << 34)
+
 // Dirty globals
-PlatformState aws_state = {FLETCHER_AWS_DEVICE_ALIGNMENT, 0, 0x0};
+PlatformState aws_state = {FLETCHER_AWS_DEVICE_ALIGNMENT, 0, 2 * MEM_16G}; // default to using DIMM C
 
 static fstatus_t check_ddr(const uint8_t *source, da_t offset, size_t size) {
   uint8_t *check_buffer = (uint8_t*)malloc(size);
@@ -158,36 +160,3 @@ fstatus_t platformCacheHostBuffer(const uint8_t *host_source, da_t *device_desti
   return ret;
 }
 
-#if 0 //joosthooz: let's first see whether this is really necessary
-// From test_dram_dma_common.c in the aws-fpga DRAM_DMA example:
-static uint8_t *send_rdbuf_to_c_read_buffer = NULL;
-static size_t send_rdbuf_to_c_buffer_size = 0;
-
-void setup_send_rdbuf_to_c(uint8_t *read_buffer, size_t buffer_size) {
-  send_rdbuf_to_c_read_buffer = read_buffer;
-  send_rdbuf_to_c_buffer_size = buffer_size;
-}
-
-int send_rdbuf_to_c(char* rd_buf) {
-#ifndef VIVADO_SIM
-  /* Vivado does not support svGetScopeFromName */
-  svScope scope;
-  scope = svGetScopeFromName("tb");
-  svSetScope(scope);
-#endif
-  int i;
-
-  /* For Questa simulator the first 8 bytes are not transmitted correctly, so
-   * the buffer is transferred with 8 extra bytes and those bytes are removed
-   * here. Made this default for all the simulators. */
-  for (i = 0; i < send_rdbuf_to_c_buffer_size; ++i) {
-    send_rdbuf_to_c_read_buffer[i] = rd_buf[i+8];
-  }
-
-  /* end of line character is not transferered correctly. So assign that
-   * here. */
-  /*send_rdbuf_to_c_read_buffer[send_rdbuf_to_c_buffer_size - 1] = '\0';*/
-
-  return 0;
-}
-#endif
