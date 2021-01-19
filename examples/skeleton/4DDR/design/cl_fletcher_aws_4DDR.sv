@@ -356,6 +356,44 @@ logic [7:0] sh_ddr_stat_addr_q[2:0];
 logic[2:0] sh_ddr_stat_wr_q;
 logic[2:0] sh_ddr_stat_rd_q; 
 logic[31:0] sh_ddr_stat_wdata_q[2:0];
+logic[2:0] ddr_sh_stat_ack_q;
+logic[31:0] ddr_sh_stat_rdata_q[2:0];
+logic[7:0] ddr_sh_stat_int_q[2:0];
+
+
+lib_pipe #(.WIDTH(1+1+8+32), .STAGES(4)) PIPE_DDR_STAT0 (.clk(clk), .rst_n(sync_rst_n),
+                                               .in_bus({sh_ddr_stat_wr0, sh_ddr_stat_rd0, sh_ddr_stat_addr0, sh_ddr_stat_wdata0}),
+                                               .out_bus({sh_ddr_stat_wr_q[0], sh_ddr_stat_rd_q[0], sh_ddr_stat_addr_q[0], sh_ddr_stat_wdata_q[0]})
+                                               );
+
+
+lib_pipe #(.WIDTH(1+8+32), .STAGES(4)) PIPE_DDR_STAT_ACK0 (.clk(clk), .rst_n(sync_rst_n),
+                                               .in_bus({ddr_sh_stat_ack_q[0], ddr_sh_stat_int_q[0], ddr_sh_stat_rdata_q[0]}),
+                                               .out_bus({ddr_sh_stat_ack0, ddr_sh_stat_int0, ddr_sh_stat_rdata0})
+                                               );
+
+
+lib_pipe #(.WIDTH(1+1+8+32), .STAGES(4)) PIPE_DDR_STAT1 (.clk(clk), .rst_n(sync_rst_n),
+                                               .in_bus({sh_ddr_stat_wr1, sh_ddr_stat_rd1, sh_ddr_stat_addr1, sh_ddr_stat_wdata1}),
+                                               .out_bus({sh_ddr_stat_wr_q[1], sh_ddr_stat_rd_q[1], sh_ddr_stat_addr_q[1], sh_ddr_stat_wdata_q[1]})
+                                               );
+
+
+lib_pipe #(.WIDTH(1+8+32), .STAGES(4)) PIPE_DDR_STAT_ACK1 (.clk(clk), .rst_n(sync_rst_n),
+                                               .in_bus({ddr_sh_stat_ack_q[1], ddr_sh_stat_int_q[1], ddr_sh_stat_rdata_q[1]}),
+                                               .out_bus({ddr_sh_stat_ack1, ddr_sh_stat_int1, ddr_sh_stat_rdata1})
+                                               );
+
+lib_pipe #(.WIDTH(1+1+8+32), .STAGES(4)) PIPE_DDR_STAT2 (.clk(clk), .rst_n(sync_rst_n),
+                                               .in_bus({sh_ddr_stat_wr2, sh_ddr_stat_rd2, sh_ddr_stat_addr2, sh_ddr_stat_wdata2}),
+                                               .out_bus({sh_ddr_stat_wr_q[2], sh_ddr_stat_rd_q[2], sh_ddr_stat_addr_q[2], sh_ddr_stat_wdata_q[2]})
+                                               );
+
+
+lib_pipe #(.WIDTH(1+8+32), .STAGES(4)) PIPE_DDR_STAT_ACK2 (.clk(clk), .rst_n(sync_rst_n),
+                                               .in_bus({ddr_sh_stat_ack_q[2], ddr_sh_stat_int_q[2], ddr_sh_stat_rdata_q[2]}),
+                                               .out_bus({ddr_sh_stat_ack2, ddr_sh_stat_int2, ddr_sh_stat_rdata2})
+                                               ); 
 
 //convert to 2D 
 logic[15:0] cl_sh_ddr_awid_2d[2:0];
@@ -542,40 +580,26 @@ sh_ddr #(
    .sh_ddr_stat_wr0    (sh_ddr_stat_wr_q[0]     ) , 
    .sh_ddr_stat_rd0    (sh_ddr_stat_rd_q[0]     ) , 
    .sh_ddr_stat_wdata0 (sh_ddr_stat_wdata_q[0]  ) , 
-   .ddr_sh_stat_ack0   () ,
-   .ddr_sh_stat_rdata0 (),
-   .ddr_sh_stat_int0   (),
+   .ddr_sh_stat_ack0   (ddr_sh_stat_ack_q[0]    ) ,
+   .ddr_sh_stat_rdata0 (ddr_sh_stat_rdata_q[0]  ),
+   .ddr_sh_stat_int0   (ddr_sh_stat_int_q[0]    ),
 
    .sh_ddr_stat_addr1  (sh_ddr_stat_addr_q[1]) ,
    .sh_ddr_stat_wr1    (sh_ddr_stat_wr_q[1]     ) , 
    .sh_ddr_stat_rd1    (sh_ddr_stat_rd_q[1]     ) , 
    .sh_ddr_stat_wdata1 (sh_ddr_stat_wdata_q[1]  ) , 
-   .ddr_sh_stat_ack1   () ,
-   .ddr_sh_stat_rdata1 (),
-   .ddr_sh_stat_int1   (),
+   .ddr_sh_stat_ack1   (ddr_sh_stat_ack_q[1]    ) ,
+   .ddr_sh_stat_rdata1 (ddr_sh_stat_rdata_q[1]  ),
+   .ddr_sh_stat_int1   (ddr_sh_stat_int_q[1]    ),
 
    .sh_ddr_stat_addr2  (sh_ddr_stat_addr_q[2]) ,
    .sh_ddr_stat_wr2    (sh_ddr_stat_wr_q[2]     ) , 
    .sh_ddr_stat_rd2    (sh_ddr_stat_rd_q[2]     ) , 
    .sh_ddr_stat_wdata2 (sh_ddr_stat_wdata_q[2]  ) , 
-   .ddr_sh_stat_ack2   () ,
-   .ddr_sh_stat_rdata2 (),
-   .ddr_sh_stat_int2   () 
+   .ddr_sh_stat_ack2   (ddr_sh_stat_ack_q[2]    ) ,
+   .ddr_sh_stat_rdata2 (ddr_sh_stat_rdata_q[2]  ),
+   .ddr_sh_stat_int2   (ddr_sh_stat_int_q[2]    )
    );
-
-
-  assign ddr_sh_stat_ack0   =   1'b1; // Needed in order not to hang the interface
-  assign ddr_sh_stat_rdata0 =  32'b0;
-  assign ddr_sh_stat_int0   =   8'b0;
-
-  assign ddr_sh_stat_ack1   =   1'b1; // Needed in order not to hang the interface
-  assign ddr_sh_stat_rdata1 =  32'b0;
-  assign ddr_sh_stat_int1   =   8'b0;
-
-  assign ddr_sh_stat_ack2   =   1'b1; // Needed in order not to hang the interface
-  assign ddr_sh_stat_rdata2 =  32'b0;
-  assign ddr_sh_stat_int2   =   8'b0;
-
 
 //----------------------------------------- 
 // DDR controller instantiation   
