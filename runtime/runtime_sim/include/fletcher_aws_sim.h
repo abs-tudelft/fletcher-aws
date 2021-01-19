@@ -42,10 +42,6 @@ typedef struct {
   da_t buffer_ptr;
 } PlatformState;
 
-/// Platform options.
-typedef struct {
-  int no_DDR_init;
-} InitOptions;
 
 /// @brief Store the platform name in a buffer of size /p size pointed to by /p name.
 fstatus_t platformGetName(char *name, size_t size);
