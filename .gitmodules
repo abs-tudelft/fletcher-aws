@@ -1,3 +1,6 @@
 [submodule "fletcher"]
 	path = fletcher
 	url = https://github.com/abs-tudelft/fletcher
+[submodule "aws-fpga"]
+	path = aws-fpga
+	url = https://github.com/aws/aws-fpga.git
