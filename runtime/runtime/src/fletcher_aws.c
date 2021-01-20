@@ -19,15 +19,21 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "fletcher/fletcher.h"
-#include "fletcher_aws.h"
+#include <fpga_pci.h>
+#include <fpga_mgmt.h>
+#include <fpga_dma.h>
+#include <utils/lcd.h>
+
+#include "fletcher_aws_private.h"
 
 static const uint16_t AMZ_PCI_VENDOR_ID = 0x1D0F; /* Amazon PCI Vendor ID */
 static const uint16_t PCI_DEVICE_ID = 0xF001;
 
+//#define debug_print printf
+
 // Dirty globals
-AwsConfig aws_default_config = {0, 0, 1}; // Slot 0, BAR1
-PlatformState aws_state = {{0, 0, 1}, 4096, {0}, {0},  0, 0, 0x0};
+AwsConfig aws_default_config = FLETCHER_AWS_CONFIG_DEFAULT;
+PlatformState aws_state = {{0, 0, 1}, 4096, {0}, {0}, 0, 0, 0};
 
 static fstatus_t check_ddr(const uint8_t *source, da_t offset, size_t size) {
   uint8_t *check_buffer = (uint8_t *) malloc(size);
@@ -77,16 +83,16 @@ static fstatus_t check_slot_config(int slot_id) {
             "\tThe PCI vendor id and device of the loaded image are not the expected values.", slot_id);
     return FLETCHER_STATUS_ERROR;
   }
-  
-    char dbdf[16];
-    snprintf(dbdf,
-                  sizeof(dbdf),
-                  PCI_DEV_FMT,
-                  info.spec.map[FPGA_APP_PF].domain,
-                  info.spec.map[FPGA_APP_PF].bus,
-                  info.spec.map[FPGA_APP_PF].dev,
-                  info.spec.map[FPGA_APP_PF].func);
-    debug_print("[FLETCHER_AWS] Operating on slot %d with id: %s", slot_id, dbdf);
+
+  char dbdf[16];
+  snprintf(dbdf,
+                sizeof(dbdf),
+                PCI_DEV_FMT,
+                info.spec.map[FPGA_APP_PF].domain,
+                info.spec.map[FPGA_APP_PF].bus,
+                info.spec.map[FPGA_APP_PF].dev,
+                info.spec.map[FPGA_APP_PF].func);
+  debug_print("[FLETCHER_AWS] Operating on slot %d with id: %s", slot_id, dbdf);
 
   return FLETCHER_STATUS_OK;
 }
@@ -113,6 +119,7 @@ fstatus_t platformInit(void *arg) {
   }
 
   aws_state.config = *config;
+  aws_state.buffer_ptr = 0x400000000ull * config->ddr_bank;
 
   debug_print("[FLETCHER_AWS] Initializing platform.       Arguments @ [host] %016lX.\n", (unsigned long) arg);
 
@@ -137,7 +144,7 @@ fstatus_t platformInit(void *arg) {
 
     // Attempt to open a XDMA DMA Queue
     debug_print("[FLETCHER_AWS] Attempting to open DMA queue %d.\n", q);
-    
+
     aws_state.xdma_wr_fd[q] = fpga_dma_open_queue(FPGA_DMA_XDMA, aws_state.config.slot_id,
         /*channel*/ q, /*is_read*/ false);
     aws_state.xdma_rd_fd[q] = fpga_dma_open_queue(FPGA_DMA_XDMA, aws_state.config.slot_id,
@@ -195,7 +202,7 @@ fstatus_t platformReadMMIO(uint64_t offset, uint32_t *value) {
     aws_state.error = 1;
     return FLETCHER_STATUS_ERROR;
   }
-  debug_print("[FLETCHER_AWS] MMIO Read %d : %08X\n", (uint32_t) offset, (uint32_t)(*value));
+//  debug_print("[FLETCHER_AWS] MMIO Read %d : %08X\n", (uint32_t) offset, (uint32_t)(*value));
   return FLETCHER_STATUS_OK;
 }
 
@@ -211,7 +218,7 @@ fstatus_t platformCopyHostToDevice(const uint8_t *host_source, da_t device_desti
  * use only 1 queue for now, the burst library functions take care of
  * issueing multiple DMA transfers.
  */  
-  int q = 0; 
+  int q = 0;
   ssize_t rc = 0;
   rc = fpga_dma_burst_write(aws_state.xdma_wr_fd[q], (uint8_t*)host_source, size, device_destination);
   if (rc < 0) {
@@ -243,7 +250,7 @@ fstatus_t platformCopyDeviceToHost(da_t device_source, uint8_t *host_destination
  * use only 1 queue for now, the burst library functions take care of
  * issueing multiple DMA transfers.
  */  
-  int q = 0; 
+  int q = 0;
   ssize_t rc = 0;
   rc = fpga_dma_burst_read(aws_state.xdma_rd_fd[0], host_destination, size, device_source);
   if (rc < 0) {

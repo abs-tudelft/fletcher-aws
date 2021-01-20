@@ -28,6 +28,7 @@ add_compile_unit(
   TYPE SHARED
   PRPS
     C_STANDARD 99
+    CFLAGS -g
   SRCS
     src/fletcher_aws.c
   DEPS

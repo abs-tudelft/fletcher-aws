@@ -20,14 +20,14 @@
 #include <stdlib.h>
 
 #include "fletcher/fletcher.h"
-#include "fletcher_aws_sim.h"
+#include "fletcher_aws_sim_private.h"
 
 #include <fpga_pci_sv.h>
 #include <utils/sh_dpi_tasks.h>
 
 // Dirty globals
 PlatformState aws_state = {FLETCHER_AWS_DEVICE_ALIGNMENT, 0, 0x0};
-InitOptions options = {0};
+InitOptions options = FLETCHER_AWS_SIM_CONFIG_DEFAULT;
 
 static fstatus_t check_ddr(const uint8_t *source, da_t offset, size_t size) {
   uint8_t *check_buffer = (uint8_t*)malloc(size);
@@ -53,6 +53,7 @@ fstatus_t platformInit(void *arg) {
   if (arg != NULL) {
     options = *(InitOptions*)arg;
   }
+  aws_state.buffer_ptr = 0x400000000ull * options.ddr_bank;
 
   debug_print("[FLETCHER_AWS_SIM] Initializing platform.       Arguments @ [host] %016lX.\n", (unsigned long) arg);
 
