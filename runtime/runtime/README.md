@@ -1,10 +1,11 @@
-# Fletcher aws platform driver
+# Fletcher AWS platform driver
 
-# Build & install
+## Build & install
 
 ```console
 mkdir build
 cmake ..
 make
 sudo make install
+sudo ldconfig
 ```

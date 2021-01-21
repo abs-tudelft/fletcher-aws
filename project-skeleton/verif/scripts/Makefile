@@ -36,7 +36,7 @@ export SDK_DIR = $(AWS_FPGA_REPO_DIR)/sdk
 export C_COMMON_DIR        = $(HDK_COMMON_DIR)/software
 export C_SDK_USR_INC_DIR   = $(SDK_DIR)/userspace/include
 export C_SDK_USR_UTILS_DIR = $(SDK_DIR)/userspace/utils
-export C_BUILD_DIR  = $(CL_ROOT)/software/build
+export C_BUILD_DIR         = $(CL_ROOT)/software/build
 
 #The common fletcher AWS platform code 
 #This Makefile cannot use the library due to link order; 
@@ -52,6 +52,9 @@ ifeq ($(C_TEST),test_null)
   C_FILES += $(C_COMMON_DIR)/src/fpga_pci_sv.c
 else
   C_TEST_NAME = $(C_BUILD_DIR)/lib$(C_TEST)_lib.so
+  ifeq (,$(wildcard /opt/local/bin/gsort))
+    $(error $(C_TEST_NAME) does not exist. Did you build the host application?)
+  endif
   ifeq ($(LD_LIBRARY_PATH),)
     export LD_LIBRARY_PATH=$(C_BUILD_DIR)
   else
