@@ -52,7 +52,7 @@ ifeq ($(C_TEST),test_null)
   C_FILES += $(C_COMMON_DIR)/src/fpga_pci_sv.c
 else
   C_TEST_NAME = $(C_BUILD_DIR)/lib$(C_TEST)_lib.so
-  ifeq (,$(wildcard /opt/local/bin/gsort))
+  ifeq (,$(wildcard $(C_TEST_NAME)))
     $(error $(C_TEST_NAME) does not exist. Did you build the host application?)
   endif
   ifeq ($(LD_LIBRARY_PATH),)

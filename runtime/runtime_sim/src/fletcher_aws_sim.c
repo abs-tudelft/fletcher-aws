@@ -65,6 +65,12 @@ fstatus_t platformInit(void *arg) {
   svSetScope(scope);
 #endif
 
+  debug_print("Delay for 30us to wait for DDR init...\n");
+  // If this seems ugly to you... the Verilog init_ddr() task also just waits
+  // (besides poking test registers that don't exist in our stripped design)
+  sv_pause(30);
+  debug_print("DDR should be initialized now.\n");
+
   return FLETCHER_STATUS_OK;
 }
 
