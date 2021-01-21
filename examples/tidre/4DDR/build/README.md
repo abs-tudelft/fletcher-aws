@@ -1,1 +1,0 @@
-../../../../aws-fpga/hdk/common/shell_stable/new_cl_template/build/README.md
