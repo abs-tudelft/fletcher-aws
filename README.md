@@ -1,8 +1,4 @@
-# Fletcher AWS platform support
-
-[![Build Status](https://dev.azure.com/abs-tudelft/fletcher/_apis/build/status/abs-tudelft.fletcher-aws?branchName=master)](https://dev.azure.com/abs-tudelft/fletcher/_build/latest?definitionId=7&branchName=master)
-
-Fletcher AWS platform support.
+# Fletcher AWS F1 platform support
 
 Before running any other command, source `sourceme.sh`. This will do everything
 needed to set up the AWS SDK and HDK. It will also clone the subrepos if you
