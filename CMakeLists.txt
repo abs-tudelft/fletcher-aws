@@ -38,11 +38,11 @@ ExternalProject_Add(aws-fpga
   GIT_TAG           v1.4.17
   GIT_SHALLOW       ON
   GIT_SUBMODULES    ""
-  GIT_PROGRESS      ON
   CONFIGURE_COMMAND ""
   SOURCE_SUBDIR     sdk/userspace
   BUILD_IN_SOURCE   ON
   BUILD_COMMAND     ./mkall_fpga_mgmt_tools.sh
+  BUILD_BYPRODUCTS  <SOURCE_DIR>/hdk/common/software/src/fpga_pci_sv.c
   INSTALL_COMMAND   ""
 )
 ExternalProject_Get_property(aws-fpga SOURCE_DIR)
@@ -56,7 +56,8 @@ set_target_properties(fpga_mgmt_shared PROPERTIES IMPORTED_LOCATION ${SOURCE_DIR
 target_link_libraries(fpga_mgmt INTERFACE fpga_mgmt_shared)
 
 add_library(fpga_pci_sv INTERFACE)
-target_include_directories(fpga_pci_sv INTERFACE 
+add_dependencies(fpga_pci_sv aws-fpga)
+target_include_directories(fpga_pci_sv INTERFACE
   ${SOURCE_DIR}/sdk/userspace/include
   ${SOURCE_DIR}/hdk/common/software/include
 )
@@ -64,8 +65,6 @@ target_include_directories(fpga_pci_sv INTERFACE
 add_subdirectory(runtime)
 
 compile_units()
-
-set_source_files_properties(${SOURCE_DIR}/hdk/common/software/src/fpga_pci_sv.c PROPERTIES GENERATED TRUE)
 
 execute_process (
     COMMAND bash -c "awk -F= '/^ID=/{print $2}' /etc/os-release |tr -d '\n' | tr -d '\"'"
