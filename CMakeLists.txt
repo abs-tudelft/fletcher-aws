@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
 project(fletcher_aws
-  VERSION 0.2.0
+  VERSION 0.3.0
   DESCRIPTION "Fletcher platform support for Amazon AWS F1"
   HOMEPAGE_URL "https://github.com/abs-tudelft/fletcher-aws"
   LANGUAGES C
